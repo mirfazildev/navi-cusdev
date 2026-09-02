@@ -233,6 +233,7 @@ input.num{
    NAVI — suhbat bloknoti
    ============================================================ */
 const LS_REC='navi_records_v1', LS_DRAFT='navi_draft_v1', LS_CFG='navi_cfg_v1';
+const APPS_SCRIPT = "function doPost(e){\n  var lock = LockService.getScriptLock();\n  lock.waitLock(20000);\n  try{\n    var d  = JSON.parse(e.postData.contents);\n    var sh = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];\n\n    // --- suhbatni o'chirish (ID bo'yicha) ---\n    if(d.action === 'delete'){\n      var n = sh.getLastRow();\n      if(n > 1){\n        var ids = sh.getRange(2, 1, n - 1, 1).getValues();\n        for(var i = ids.length - 1; i >= 0; i--){\n          if(String(ids[i][0]) === String(d.id)) sh.deleteRow(i + 2);\n        }\n      }\n      return out({ok:true, action:'delete', id:d.id});\n    }\n\n    // --- yangi suhbat qo'shish ---\n    if(sh.getLastRow() === 0){\n      sh.appendRow(d.headers);\n      sh.setFrozenRows(1);\n    }\n    var last = sh.getLastRow();\n    var have = [];\n    if(last > 1){\n      have = sh.getRange(2, 1, last - 1, 1).getValues().map(function(r){ return String(r[0]); });\n    }\n    if(have.indexOf(String(d.id)) === -1) sh.appendRow(d.row);\n\n    return out({ok:true, action:'add', id:d.id});\n  }catch(err){\n    return out({ok:false, error:String(err)});\n  }finally{\n    lock.releaseLock();\n  }\n}\n\nfunction out(o){\n  return ContentService.createTextOutput(JSON.stringify(o))\n    .setMimeType(ContentService.MimeType.JSON);\n}";
 let DB=null;
 
 /* ---------- profil maydonlari ---------- */
@@ -964,11 +965,28 @@ function vCfg(app){
   steps.innerHTML=`<span class="rb-label" style="color:var(--accent)">5 daqiqalik sozlash</span><ul>
     <li>Google Sheets'da yangi jadval oching.</li>
     <li><strong>Kengaytmalar → Apps Script</strong>.</li>
-    <li>Men bergan kodni qo'ying va saqlang.</li>
+    <li>Ichidagi hamma narsani o'chirib, <strong>pastdagi kodni</strong> qo'ying va saqlang.</li>
     <li><strong>Deploy → New deployment → Web app</strong>; «Execute as: Me», «Who has access: Anyone».</li>
     <li>Chiqqan <strong>Web app URL</strong> ni pastga qo'ying.</li>
   </ul>`;
   app.appendChild(steps);
+
+  const codeBtn=el('button','btn ghost small','Apps Script kodini nusxa olish');
+  codeBtn.onclick=async()=>{
+    try{await navigator.clipboard.writeText(APPS_SCRIPT);toast('Kod nusxa olindi');}
+    catch(e){const t=$('#gscode');if(t){t.focus();t.select();
+      try{document.execCommand('copy');toast('Kod nusxa olindi');}catch(e2){toast('Maydondan qo\'lda nusxa oling');}}}
+  };
+  app.appendChild(codeBtn);
+  const codeTa=el('textarea','txt tsvbox');codeTa.id='gscode';codeTa.readOnly=true;codeTa.value=APPS_SCRIPT;
+  app.appendChild(codeTa);
+
+  const warn=el('div','rulebox');
+  warn.style.borderLeftColor='var(--bad)';
+  warn.innerHTML=`<span class="rb-label" style="color:var(--bad)">Kodni yangilaganda</span>
+    <p style="margin:0;font-size:15px">Kodni saqlashning o'zi yetmaydi. <strong>Deploy \u2192 Manage deployments \u2192 \u270e \u2192 Version: New version \u2192 Deploy</strong> ni bosing,
+    aks holda eski manzil eski kodni ishlatishda davom etadi va o'chirish ishlamaydi.</p>`;
+  app.appendChild(warn);
 
   app.appendChild(el('h2',null,"2 · Web app manzili"));
   const inp=el('input','txt');inp.type='url';inp.placeholder='https://script.google.com/macros/s/…/exec';
