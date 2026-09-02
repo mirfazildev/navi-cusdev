@@ -1,0 +1,1043 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#12615b">
+<meta name="description" content="NAVI CustDev suhbat bloknoti">
+<style>html{color-scheme:light dark}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>NAVI Suhbat Bloknoti</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+
+<style>
+:root{
+  --bg:#f2f4f6; --surface:#ffffff; --surface-2:#e9edf1; --surface-3:#dfe5ea;
+  --ink:#161c22; --muted:#5c6773; --faint:#8b96a1;
+  --line:#d8dee5; --line-soft:#e6ebf0;
+  --accent:#12615b; --accent-ink:#ffffff; --accent-soft:#dbeceb;
+  --good:#2c6a4c; --good-soft:#dcece3;
+  --bad:#9e3626; --bad-soft:#f4e0dc;
+  --warn:#8a6210; --warn-soft:#f5e9d2;
+  --shadow:0 1px 2px rgba(22,28,34,.07), 0 10px 26px -18px rgba(22,28,34,.4);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#11161b; --surface:#1a2027; --surface-2:#222a32; --surface-3:#2c353e;
+  --ink:#e6ebef; --muted:#9ba7b3; --faint:#75828e;
+  --line:#2c353e; --line-soft:#232b33;
+  --accent:#5fbdb3; --accent-ink:#0d1a19; --accent-soft:#1a302e;
+  --good:#75c396; --good-soft:#1c2e25;
+  --bad:#e08d7b; --bad-soft:#33201c;
+  --warn:#d5a748; --warn-soft:#332818;
+  --shadow:0 1px 2px rgba(0,0,0,.45), 0 10px 26px -18px rgba(0,0,0,.85);
+}}
+:root[data-theme="dark"]{
+  --bg:#11161b; --surface:#1a2027; --surface-2:#222a32; --surface-3:#2c353e;
+  --ink:#e6ebef; --muted:#9ba7b3; --faint:#75828e;
+  --line:#2c353e; --line-soft:#232b33;
+  --accent:#5fbdb3; --accent-ink:#0d1a19; --accent-soft:#1a302e;
+  --good:#75c396; --good-soft:#1c2e25;
+  --bad:#e08d7b; --bad-soft:#33201c;
+  --warn:#d5a748; --warn-soft:#332818;
+  --shadow:0 1px 2px rgba(0,0,0,.45), 0 10px 26px -18px rgba(0,0,0,.85);
+}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Source Serif 4",Georgia,serif;font-size:17px;line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+.app{max-width:640px;margin:0 auto;padding:0 14px 120px;}
+.hidden{display:none!important;}
+button{font:inherit;color:inherit;cursor:pointer;}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px;}
+
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;}
+.sans{font-family:"Archivo","Helvetica Neue",Arial,sans-serif;}
+
+/* ---------- top bar ---------- */
+.bar{
+  position:sticky;top:0;z-index:20;background:var(--bg);
+  border-bottom:1px solid var(--line);
+  padding:9px 0 8px;margin:0 -14px;padding-left:14px;padding-right:14px;
+  display:flex;align-items:center;gap:10px;
+}
+.bar-back{
+  background:none;border:1px solid var(--line);border-radius:20px;
+  padding:5px 12px;font-family:"Archivo",sans-serif;font-size:13px;font-weight:600;
+  color:var(--muted);
+}
+.bar-mid{flex:1;min-width:0;}
+.bar-title{font-family:"Archivo",sans-serif;font-weight:600;font-size:14.5px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;}
+.bar-sub{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--faint);display:block;}
+.bar-timer{font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:600;color:var(--accent);
+  font-variant-numeric:tabular-nums;}
+.prog{height:3px;background:var(--surface-3);margin:0 -14px;position:sticky;top:52px;z-index:19;}
+.prog i{display:block;height:100%;background:var(--accent);width:0;transition:width .2s;}
+
+/* ---------- home ---------- */
+.home-head{padding:34px 0 18px;border-bottom:2px solid var(--ink);}
+.kicker{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--accent);font-weight:600;}
+h1{font-family:"Archivo",sans-serif;font-weight:700;font-size:31px;line-height:1.05;
+  letter-spacing:-.02em;margin:9px 0 8px;}
+.lede{color:var(--muted);margin:0;font-size:16px;}
+
+.btn{
+  display:block;width:100%;text-align:center;border:none;border-radius:10px;
+  background:var(--accent);color:var(--accent-ink);
+  font-family:"Archivo",sans-serif;font-weight:600;font-size:17px;
+  padding:16px;margin:16px 0 0;
+}
+.btn.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line);}
+.btn.small{font-size:15px;padding:12px;}
+.btn:active{transform:translateY(1px);}
+
+h2{font-family:"Archivo",sans-serif;font-weight:600;font-size:19px;letter-spacing:-.01em;
+  margin:34px 0 10px;}
+h3{font-family:"Archivo",sans-serif;font-weight:600;font-size:16px;margin:0 0 5px;}
+p{margin:0 0 12px;}
+
+.prio{display:flex;flex-direction:column;gap:8px;margin:12px 0 0;}
+.prio-item{
+  background:var(--surface);border:1px solid var(--line);border-radius:8px;
+  padding:12px 14px;display:grid;grid-template-columns:auto 1fr;gap:0 12px;
+  border-left:3px solid var(--line);
+}
+.prio-item.p1{border-left-color:var(--accent);}
+.prio-item.p2{border-left-color:var(--accent);}
+.prio-item.p3{border-left-color:var(--warn);}
+.prio-item.p4{border-left-color:var(--muted);}
+.prio-item.p5{border-left-color:var(--muted);}
+.prio-n{font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:600;color:var(--accent);padding-top:3px;}
+.prio-item.p3 .prio-n{color:var(--warn);} .prio-item.p4 .prio-n,.prio-item.p5 .prio-n{color:var(--muted);}
+.prio-why{font-size:14.5px;color:var(--muted);margin:2px 0 0;}
+.prio-count{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--faint);
+  display:block;margin-top:5px;letter-spacing:.04em;}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);
+  border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:16px 0 0;}
+.stat{background:var(--surface);padding:13px 10px;text-align:center;}
+.stat b{font-family:"Archivo",sans-serif;font-size:23px;display:block;color:var(--accent);
+  font-variant-numeric:tabular-nums;line-height:1.1;}
+.stat span{font-size:12.5px;color:var(--muted);display:block;margin-top:2px;}
+
+.rulebox{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--warn);
+  border-radius:0 8px 8px 0;padding:14px 16px;margin:14px 0;}
+.rulebox ul{margin:0;padding-left:18px;}
+.rulebox li{margin-bottom:5px;font-size:15.5px;}
+.rulebox li:last-child{margin-bottom:0;}
+.rb-label{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--warn);font-weight:600;display:block;margin-bottom:7px;}
+
+/* ---------- setup ---------- */
+.q-setup{margin:22px 0 0;}
+.q-setup > label{font-family:"Archivo",sans-serif;font-weight:600;font-size:16.5px;
+  display:block;margin-bottom:9px;}
+.q-setup .sublab{font-size:14px;color:var(--muted);font-weight:400;display:block;margin-top:2px;}
+.opts{display:flex;flex-wrap:wrap;gap:8px;}
+.opt{
+  border:1px solid var(--line);background:var(--surface);border-radius:22px;
+  padding:10px 15px;font-family:"Archivo",sans-serif;font-size:15px;font-weight:500;
+}
+.opt[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);}
+.txt{
+  width:100%;background:var(--surface);border:1px solid var(--line);border-radius:8px;
+  padding:12px 13px;font-family:"Source Serif 4",Georgia,serif;font-size:16.5px;color:var(--ink);
+  line-height:1.5;resize:vertical;
+}
+.txt::placeholder{color:var(--faint);}
+
+/* ---------- interview ---------- */
+.modebar{display:flex;gap:8px;margin:14px 0 4px;align-items:center;}
+.modebar .lbl{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--faint);
+  letter-spacing:.06em;text-transform:uppercase;margin-right:auto;}
+.seg{display:flex;background:var(--surface-2);border-radius:8px;padding:3px;gap:3px;}
+.seg button{border:none;background:none;border-radius:6px;padding:7px 12px;
+  font-family:"Archivo",sans-serif;font-size:13.5px;font-weight:600;color:var(--muted);}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow);}
+
+.sec-title{
+  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--accent);font-weight:600;margin:26px 0 9px;display:flex;gap:9px;align-items:baseline;
+}
+.sec-title em{font-family:"Source Serif 4",serif;font-style:italic;font-size:13px;
+  color:var(--faint);text-transform:none;letter-spacing:0;font-weight:400;}
+
+.card{
+  background:var(--surface);border:1px solid var(--line);border-radius:10px;
+  padding:15px 16px 14px;margin-bottom:11px;
+}
+.card.done{border-color:var(--accent);}
+.card .qtext{font-size:18px;line-height:1.4;margin:0 0 4px;}
+.card .star{color:var(--accent);font-family:"IBM Plex Mono",monospace;font-size:13px;
+  font-weight:600;margin-right:5px;}
+.card .hint{font-size:14px;color:var(--muted);font-style:italic;margin:0 0 10px;}
+.card .qtext + .ansbox{margin-top:10px;}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 9px;}
+.chip{
+  border:1px solid var(--line);background:var(--surface-2);border-radius:16px;
+  padding:6px 11px;font-family:"Archivo",sans-serif;font-size:13.5px;font-weight:500;color:var(--muted);
+}
+.chip[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);}
+input.num{
+  width:120px;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;
+  padding:11px 12px;font-family:"IBM Plex Mono",monospace;font-size:17px;color:var(--ink);
+  font-variant-numeric:tabular-nums;
+}
+.tagline{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--faint);
+  letter-spacing:.06em;margin-top:9px;display:block;}
+
+.footpad{height:20px;}
+.bottombar{
+  position:fixed;left:0;right:0;bottom:0;background:var(--bg);
+  border-top:1px solid var(--line);padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+  z-index:25;
+}
+.bottombar .inner{max-width:640px;margin:0 auto;display:flex;gap:9px;align-items:center;}
+.bottombar .btn{margin:0;flex:1;}
+.saveflag{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--good);
+  white-space:nowrap;opacity:0;transition:opacity .3s;}
+.saveflag.on{opacity:1;}
+
+/* ---------- archive ---------- */
+.rec{
+  background:var(--surface);border:1px solid var(--line);border-radius:9px;
+  padding:13px 14px;margin-bottom:9px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;
+}
+.rec b{font-family:"Archivo",sans-serif;font-size:15.5px;display:block;}
+.rec span{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--faint);display:block;margin-top:3px;}
+.rec .del{background:none;border:1px solid var(--line);border-radius:7px;padding:7px 10px;
+  color:var(--bad);font-family:"Archivo",sans-serif;font-size:13px;font-weight:600;}
+.empty{color:var(--faint);font-style:italic;padding:20px 0;text-align:center;}
+.toast{
+  position:fixed;left:50%;transform:translateX(-50%);bottom:86px;z-index:40;
+  background:var(--ink);color:var(--bg);font-family:"Archivo",sans-serif;font-size:14px;font-weight:600;
+  padding:11px 18px;border-radius:22px;opacity:0;pointer-events:none;transition:opacity .25s;
+  max-width:90%;text-align:center;
+}
+.toast.on{opacity:1;}
+.tsvbox{width:100%;height:150px;margin-top:10px;font-family:"IBM Plex Mono",monospace;font-size:11px;}
+</style>
+
+<div class="app" id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   NAVI — suhbat bloknoti
+   ============================================================ */
+const LS_REC='navi_records_v1', LS_DRAFT='navi_draft_v1', LS_CFG='navi_cfg_v1';
+let DB=null, DL=null;
+
+/* ---------- profil maydonlari ---------- */
+const P_WHO=[['bola',"Bola / o'smir"],['ota',"Ota-ona"]];
+const P_AGE=[['12-13','12–13'],['14-16','14–16'],['17+','17+']];
+const P_LEARN=[
+  ['it_off',"IT kursi (offline)"],
+  ['it_on',"IT — o'zi, onlayn"],
+  ['til',"Til kursi"],
+  ['fan',"Fan / repetitor"],
+  ['yoq',"Hech qayerga bormaydi"]
+];
+const P_DEC=[['yoq',"Yo'q, bilmaydi"],['taxmin',"Taxminan bor"],['ha',"Ha, aniq"]];
+const P_MOOD=[['faol',"Faol — izlaydi, to'laydi"],['loqayd',"Loqayd — aralashmaydi"]];
+
+/* ---------- bo'limlar ---------- */
+const SECS={
+  kirish:["Isinish","3 daqiqa · tahlil qilmang, tinglang"],
+  qaror_yoq:["Ikkilanish","Asosiy blok · H1 — og'riq bormi"],
+  qaror_bor:["Qaror momenti","Voqeani so'rang, sababni emas"],
+  organish:["Mustaqil o'rganish","H3 — tashlab ketish nuqtasi"],
+  it_off:["IT kursi","H5, H7, H8"],
+  it_on:["Onlayn mustaqil","H3 — eng qimmatli ma'lumot"],
+  til:["Til kursi","To'lovchi oila · nega IT emas"],
+  fan:["Fan / repetitor","Muqobil yo'l"],
+  yoq:["Hech qayerga bormaydi","To'siq nima"],
+  yopilish:["Yopilish va majburiyat","Gap emas, harakat"],
+  p_holat:["Bugungi holat","Og'riq va oqibat"],
+  p_tarix:["Oxirgi 12 oy","H2 — pul faktlari"],
+  p_kasb:["Kasb tanlash","H1, H4"],
+  p_pul:["Byudjet va qaror","H2, H5"],
+  p_yopilish:["Yopilish va majburiyat","Bo'nak testi"],
+  xulosa:["Suhbatdan keyin","5 daqiqa · darhol to'ldiring"]
+};
+const SEC_ORDER=['kirish','qaror_yoq','qaror_bor','organish','it_off','it_on','til','fan','yoq','yopilish',
+                 'p_holat','p_tarix','p_kasb','p_pul','p_yopilish','xulosa'];
+
+/* ---------- yordamchi shartlar ---------- */
+const isBola=p=>p.who==='bola', isOta=p=>p.who==='ota';
+const has=(p,k)=>(p.learn||[]).includes(k);
+
+/* ---------- savollar banki ---------- */
+const Q=[
+/* === BOLA: isinish === */
+{id:'k1',s:'kirish',w:isBola,c:1,q:"Kecha maktabdan keyin nima qilding? Soatma-soat ayt.",
+ h:"«Odatda» emas — aynan kecha."},
+{id:'k2',s:'kirish',w:isBola,c:1,q:"Telefoningni ochib ekran vaqtini ko'rsat — eng ko'p 3 ta ilova qaysi?",
+ h:"Ekranni ko'ring. Aytilganiga emas, ko'ringaniga ishoning.",
+ chips:["TikTok","Instagram","YouTube","Telegram","O'yin","Boshqa"]},
+{id:'k3',s:'kirish',w:isBola,q:"Bu hafta hech kim majburlamasdan o'zing nimadir o'rgandingmi? Nima?"},
+
+/* === BOLA: ikkilanish (qaror yo'q) === */
+{id:'y1',s:'qaror_yoq',w:p=>isBola(p)&&p.dec==='yoq',c:1,
+ q:"Kelajakda kim bo'lishing haqida oxirgi marta qachon o'ylading?",
+ chips:["Shu hafta","Shu oy","Bir necha oy oldin","Eslolmayman"]},
+{id:'y2',s:'qaror_yoq',w:p=>isBola(p)&&p.dec==='yoq',c:1,
+ q:"O'shanda nima sabab bo'ldi? Kim nima dedi, nima ko'rding, qayerda eding?",
+ h:"Umumiy javob chiqsa: «aniq o'sha kuni nima bo'ldi?» deb qayta so'rang."},
+{id:'y3',s:'qaror_yoq',w:p=>isBola(p)&&p.dec==='yoq',c:1,
+ q:"O'shanda biror narsa qildingmi — kimdandir so'radingmi, qidirdingmi?",
+ h:"Hech narsa qilmagan bo'lsa — bu H1 uchun eng muhim manfiy signal.",
+ chips:["Hech narsa","So'radim","Qidirdim","Video ko'rdim"]},
+{id:'y4',s:'qaror_yoq',w:p=>isBola(p)&&p.dec==='yoq',c:1,
+ q:"Bilmasliging seni bezovta qiladimi? 1 dan 10 gacha.",t:'num'},
+{id:'y5',s:'qaror_yoq',w:p=>isBola(p)&&p.dec==='yoq',c:1,
+ q:"Bilmasliging tufayli oxirgi marta qanday noqulaylik bo'ldi?",
+ h:"Oqibat savoli. «Hech qanday» — bu ham javob va uni yozing."},
+{id:'y6',s:'qaror_yoq',w:p=>isBola(p)&&p.dec==='yoq',
+ q:"Bu haqda kim bilan gaplashding? U nima dedi?"},
+{id:'y7',s:'qaror_yoq',w:p=>isBola(p)&&p.dec==='yoq',
+ q:"Sinfdoshlaringdan qanchasi biladi deb o'ylaysan? Ular nima qilyapti?"},
+{id:'y8',s:'qaror_yoq',w:p=>isBola(p)&&p.dec==='yoq',
+ q:"Uyda bu haqda gaplashiladimi? Ota-onang nima deydi?"},
+
+/* === BOLA: qaror bor === */
+{id:'r1',s:'qaror_bor',w:p=>isBola(p)&&p.dec!=='yoq',c:1,
+ q:"Buni tanlashdan oldin nima bo'lishni o'ylayotgan eding?"},
+{id:'r2',s:'qaror_bor',w:p=>isBola(p)&&p.dec!=='yoq',c:1,
+ q:"Qachon o'zgardi — nechinchi sinf, qaysi oy?"},
+{id:'r3',s:'qaror_bor',w:p=>isBola(p)&&p.dec!=='yoq',c:1,
+ q:"O'sha paytda aniq nima sodir bo'ldi? Kim nima dedi, nima ko'rding?",
+ h:"Butun suhbatdagi eng muhim savol. «Nega tanlading?» deb so'ramang."},
+{id:'r4',s:'qaror_bor',w:p=>isBola(p)&&p.dec!=='yoq',c:1,
+ q:"Keyin birinchi qadaming nima bo'ldi? O'sha kuni yoki o'sha haftada nima qilding?"},
+{id:'r5',s:'qaror_bor',w:p=>isBola(p)&&p.dec!=='yoq',
+ q:"Ikkilanish davring qancha cho'zilgan edi?"},
+{id:'r6',s:'qaror_bor',w:p=>isBola(p)&&p.dec!=='yoq',
+ q:"Boshqa variantlar bormidi? Nega ularni tashlading?"},
+{id:'r7',s:'qaror_bor',w:p=>isBola(p)&&p.dec!=='yoq',
+ q:"Qarorimga ishonaman — 1 dan 10 gacha.",t:'num'},
+
+/* === BOLA: mustaqil o'rganish === */
+{id:'o1',s:'organish',w:isBola,c:1,
+ q:"Biror narsani o'zing o'rganmoqchi bo'lganing oxirgi marta qachon edi? Nima edi u?"},
+{id:'o2',s:'organish',w:isBola,q:"Qayerdan boshlading?",
+ chips:["YouTube","Ilova","Kurs","Do'st","Ota-ona","Maktab"]},
+{id:'o3',s:'organish',w:isBola,c:1,q:"Necha kun davom etding?",t:'num'},
+{id:'o4',s:'organish',w:isBola,c:1,
+ q:"Qaysi kuni to'xtading va o'sha kuni nima bo'ldi?",
+ h:"Tashlab ketish nuqtasi — muvaffaqiyatdan qimmatroq."},
+{id:'o5',s:'organish',w:isBola,c:1,
+ q:"Duolingo / SoloLearn kabi ilovada eng uzun ketma-ket seriyang necha kun? Ochib ko'rsat.",
+ h:"Ekranni ko'ring. H3 uchun eng ishonchli raqam.",t:'num'},
+{id:'o6',s:'organish',w:isBola,q:"Qaytib boshlaganmisan? Nima sabab bo'ldi?"},
+
+/* === IT offline === */
+{id:'i1',s:'it_off',w:p=>isBola(p)&&has(p,'it_off'),c:1,
+ q:"Kursni qayerdan topding? Aniq qayerdan?",
+ chips:["Instagram","Telegram","Tanish","Maktab","Aka/opa","Reklama"]},
+{id:'i2',s:'it_off',w:p=>isBola(p)&&has(p,'it_off'),c:1,
+ q:"Qarorni kim qabul qildi — sen so'radingmi yoki ota-onang topdimi?",
+ chips:["Men so'radim","Ota-onam","Birga","Qarindosh"]},
+{id:'i3',s:'it_off',w:p=>isBola(p)&&has(p,'it_off'),c:1,
+ q:"Dasturlashda eng qiyin bo'lgan BIRINCHI narsa nima edi?",
+ h:"Kod emas, savodxonlik chiqsa — sizning ketma-ketligingiz tasdiqlanadi.",
+ chips:["Kod mantiqi","Ingliz tili","Fayl/papka","Terminal","Klaviatura","Xatoni o'qish"]},
+{id:'i4',s:'it_off',w:p=>isBola(p)&&has(p,'it_off'),c:1,
+ q:"Nima seni ushlab turibdi — dars, ustoz, guruh, pul to'langani?",
+ h:"«Ustoz» yoki «guruh» = mustaqil format uchun manfiy signal.",
+ chips:["Ustoz","Guruh","Pul to'langan","O'z qiziqishim","Ota-onam"]},
+{id:'i5',s:'it_off',w:p=>isBola(p)&&has(p,'it_off'),
+ q:"Bir kun qoldirsang qaytish osonmi? Oxirgi marta necha kun qoldirgan eding?"},
+{id:'i6',s:'it_off',w:p=>isBola(p)&&has(p,'it_off'),
+ q:"Kursdan tashqari o'zing ham qilasanmi? Oxirgi marta qachon?"},
+
+/* === IT onlayn mustaqil === */
+{id:'n1',s:'it_on',w:p=>isBola(p)&&has(p,'it_on'),c:1,
+ q:"Qaysi platformada o'rganyapsan? Necha vaqt bo'ldi?"},
+{id:'n2',s:'it_on',w:p=>isBola(p)&&has(p,'it_on'),c:1,
+ q:"Seni kim tekshiradi? Hech kim bo'lsa — o'zingni nima bilan majburlaysan?",
+ h:"H3 ning yadrosi. NAVI aynan shu o'rinni bosishi kerak.",
+ chips:["Hech kim","Ota-onam","Do'stim","Ilova eslatmasi","O'zim"]},
+{id:'n3',s:'it_on',w:p=>isBola(p)&&has(p,'it_on'),c:1,
+ q:"Oxirgi 7 kunda necha kun ochding?",t:'num'},
+{id:'n4',s:'it_on',w:p=>isBola(p)&&has(p,'it_on'),c:1,
+ q:"Eng uzun tanaffusing necha kun bo'ldi? Nega qaytding?"},
+{id:'n5',s:'it_on',w:p=>isBola(p)&&has(p,'it_on'),
+ q:"Pullik qismini olganmisan? Nega olding yoki nega olmading?"},
+{id:'n6',s:'it_on',w:p=>isBola(p)&&has(p,'it_on'),
+ q:"Tushunmay qolsang nima qilasan? Oxirgi marta shunday bo'lganda nima qilding?"},
+
+/* === Til kursi === */
+{id:'t1',s:'til',w:p=>isBola(p)&&has(p,'til'),c:1,
+ q:"Nega aynan til? Qaror qanday qabul qilingan edi?",
+ chips:["Men so'radim","Ota-onam","Hamma boryapti","Maktab uchun"]},
+{id:'t2',s:'til',w:p=>isBola(p)&&has(p,'til'),c:1,
+ q:"Dasturlash yoki IT ni ham o'ylab ko'rganmisan? Nega yo'q?",
+ h:"Butun ilovadagi eng qimmatli savol: oila to'laydi, lekin IT ni tanlamagan. Sababni chuqur qazing.",
+ chips:["Qiyin deb o'yladim","Qiziq emas","Bilmasdim","Matematika kerak deyishdi","Kompyuter yo'q"]},
+{id:'t3',s:'til',w:p=>isBola(p)&&has(p,'til'),c:1,
+ q:"Kursga oyiga qancha to'lanadi? Bilasanmi?",
+ h:"Narx mo'ljali — NAVI narxini shu yerdan oling."},
+{id:'t4',s:'til',w:p=>isBola(p)&&has(p,'til'),
+ q:"Kursga necha oy bo'ldi? Tashlab ketmoqchi bo'lgan payting bo'lganmi?"},
+{id:'t5',s:'til',w:p=>isBola(p)&&has(p,'til'),
+ q:"Kursni qayerdan topgansizlar?",chips:["Instagram","Telegram","Tanish","Maktab","Reklama"]},
+{id:'t6',s:'til',w:p=>isBola(p)&&has(p,'til'),
+ q:"Ingliz tilini hozir nima uchun ishlatasan? Oxirgi marta qachon kerak bo'ldi?"},
+
+/* === Fan / repetitor === */
+{id:'f1',s:'fan',w:p=>isBola(p)&&has(p,'fan'),c:1,
+ q:"Nega bu fan? Kim tanladi?",chips:["Men","Ota-onam","Maktab","Repetitor tavsiyasi"]},
+{id:'f2',s:'fan',w:p=>isBola(p)&&has(p,'fan'),c:1,
+ q:"Qaysi yo'nalishga tayyorlanyapsan? Nima bo'lmoqchisan?"},
+{id:'f3',s:'fan',w:p=>isBola(p)&&has(p,'fan'),
+ q:"Kompyuter yoki dasturlash bilan aloqasi bormi deb o'ylaysanmi?"},
+{id:'f4',s:'fan',w:p=>isBola(p)&&has(p,'fan'),
+ q:"Repetitor yoki kursga oyiga qancha ketadi, bilasanmi?"},
+
+/* === Hech qayerga bormaydi === */
+{id:'h1',s:'yoq',w:p=>isBola(p)&&has(p,'yoq'),c:1,
+ q:"Nega hech qanday kursga bormaysan?",
+ chips:["Pul yo'q","Vaqt yo'q","Qiziq emas","Yaqinda yo'q","Qaysi biriga bilmayman","Ruxsat yo'q"]},
+{id:'h2',s:'yoq',w:p=>isBola(p)&&has(p,'yoq'),c:1,
+ q:"Oxirgi marta biror kursga borishni o'ylaganing qachon edi? Nima bo'ldi?",
+ h:"Umuman o'ylamagan bo'lsa — bu segment hozircha bozor emas. Yozib qo'ying."},
+{id:'h3',s:'yoq',w:p=>isBola(p)&&has(p,'yoq'),c:1,
+ q:"Kimdir taklif qilganmi? Kim, nima dedi, sen nima dedingiz?"},
+{id:'h4',s:'yoq',w:p=>isBola(p)&&has(p,'yoq'),
+ q:"Sinfdoshlaringdan kim biror kursga boradi? U nima deydi?"},
+{id:'h5',s:'yoq',w:p=>isBola(p)&&has(p,'yoq'),
+ q:"Kompyuter yoki noutbuk uyda bormi? Kim ishlatadi?",
+ chips:["Bor, o'zimniki","Bor, umumiy","Yo'q","Faqat telefon"]},
+
+/* === Bola: yopilish === */
+{id:'z1',s:'yopilish',w:isBola,q:"Berishim kerak bo'lgan, lekin bermagan savolim bormi?"},
+{id:'z2',s:'yopilish',w:isBola,c:1,
+ q:"Sinfdoshlaringdan qanchasi hali kim bo'lishini bilmaydi? 2 tasi bilan gaplashishimga yordam berasanmi?",
+ h:"H1 segmentiga yagona kirish yo'li. Ism yozing.",
+ chips:["Ha, ism berdi","Ha, lekin ismsiz","Yo'q"]},
+{id:'z3',s:'yopilish',w:isBola,c:1,
+ q:"Ota-onang bilan 20 daqiqa gaplashsam bo'ladimi? Raqamini berdimi?",
+ chips:["Raqam berdi","«So'rayman» dedi","Yo'q"]},
+{id:'z4',s:'yopilish',w:isBola,c:1,
+ q:"Majburiyat: keyingi hafta 15 daqiqalik testni sinab, fikringni yozib berasanmi?",
+ h:"«Mayli, keyinroq» = yo'q. Telegram va kun bo'lsa — ha.",
+ chips:["Telegram berdi","Kunini aytdi","«Keyinroq»","Yo'q"]},
+
+/* === OTA-ONA === */
+{id:'pa1',s:'p_holat',w:isOta,c:1,
+ q:"Farzandingiz maktabdan keyin vaqtini nimaga sarflayapti? Kecha nima qildi?"},
+{id:'pa2',s:'p_holat',w:isOta,c:1,q:"Bu sizni tashvishga solyaptimi? Aynan nimasi?"},
+{id:'pa3',s:'p_holat',w:isOta,c:1,
+ q:"Bu holat sizga nimaga tushyapti — vaqt, pul, oiladagi kelishmovchilik?",
+ h:"Oqibat savoli. «Hech narsa» bo'lsa — bu muammo emas."},
+{id:'pa4',s:'p_holat',w:p=>isOta(p)&&p.mood==='loqayd',
+ q:"Farzandingizning o'qishi bilan asosan kim shug'ullanadi?",
+ chips:["Men","Turmush o'rtog'im","Katta farzand","Hech kim"]},
+
+{id:'pb1',s:'p_tarix',w:isOta,c:1,
+ q:"Oxirgi 12 oyda qanday kurs, repetitor yoki to'garakka bordi? Birma-bir sanaymiz."},
+{id:'pb2',s:'p_tarix',w:isOta,c:1,
+ q:"Har biriga qancha to'ladingiz? Qancha davom etdi?",
+ h:"H2 ning yadrosi. Summani aytmasa — manfiy signal."},
+{id:'pb3',s:'p_tarix',w:isOta,c:1,q:"Nega tugatdi yoki nega tashladi?"},
+{id:'pb4',s:'p_tarix',w:isOta,c:1,
+ q:"Bu kurslarni qayerdan topdingiz? Aniq qayerdan?",
+ chips:["Instagram","Telegram","Tanish","Maktab","Reklama","Farzandim topdi"]},
+{id:'pb5',s:'p_tarix',w:isOta,c:1,q:"Qarorni kim qabul qildi?",
+ chips:["Men","Farzandim so'radi","Birga","Qarindosh maslahati"]},
+{id:'pb6',s:'p_tarix',w:p=>isOta(p)&&has(p,'yoq'),c:1,
+ q:"Hozir nega hech qayerga bormayapti?",
+ chips:["Pul","Vaqt","Ishonch yo'q","Kerak emas deb o'ylayman","Qaysi biriga bilmayman"]},
+
+{id:'pc1',s:'p_kasb',w:isOta,c:1,
+ q:"Farzandingizning kelajakdagi kasbi haqida oxirgi marta qachon gaplashdingiz? Nima sabab bo'ldi?"},
+{id:'pc2',s:'p_kasb',w:isOta,q:"U nima dedi, siz nima dedingiz? Kelishdingizmi?"},
+{id:'pc3',s:'p_kasb',w:isOta,c:1,
+ q:"Proforientatsiya yoki qobiliyat testi topshirganmi? Natijada nima qildingiz?"},
+{id:'pc4',s:'p_kasb',w:isOta,c:1,
+ q:"Bu mavzuda internetdan qidirganmisiz? Nima topdingiz, foyda bo'ldimi?",
+ h:"Umuman qidirmagan bo'lsa — yechimingizni ham sotib olmaydi.",
+ chips:["Qidirganman","Qidirmaganman"]},
+{id:'pc5',s:'p_kasb',w:p=>isOta(p)&&has(p,'til'),c:1,
+ q:"Til kursini tanladingiz. IT yoki dasturlashni ham ko'rib chiqqanmidingiz? Nega yo'q?",
+ h:"To'lovga tayyor oila, lekin IT ni tanlamagan. Sababi — sizga eng kerakli javob."},
+
+{id:'pd1',s:'p_pul',w:isOta,c:1,
+ q:"Farzandingiz ta'limiga oyiga qancha ajratasiz? Bu summa qanday belgilangan?"},
+{id:'pd2',s:'p_pul',w:isOta,q:"Yangi kursga pul ajratish uchun kim bilan maslahatlashasiz?"},
+{id:'pd3',s:'p_pul',w:isOta,
+ q:"Kursdan nimani kutasiz? Qanday natija bo'lsa «pulim bekorga ketmadi» deysiz?"},
+
+{id:'pe1',s:'p_yopilish',w:isOta,q:"Berishim kerak bo'lgan yana qanday savol bor edi?"},
+{id:'pe2',s:'p_yopilish',w:isOta,c:1,
+ q:"Shu yoshda bolasi bor 2 ta tanishingizni tavsiya qila olasizmi?",
+ chips:["Ha, kontakt berdi","«Aytaman»","Yo'q"]},
+{id:'pe3',s:'p_yopilish',w:isOta,c:1,
+ q:"Keyingi hafta farzandingiz bilan 30 daqiqalik sinovga qatnashasizmi?",
+ chips:["Ha, kun belgilandi","«Ko'ramiz»","Yo'q"]},
+{id:'pe4',s:'p_yopilish',w:isOta,c:1,
+ q:"Pilot guruhga joy band qilish uchun 50 000 so'm bo'nak olamiz, qaytariladi. Rozimisiz?",
+ h:"H2 ning yagona haqiqiy testi. Qolgan hammasi — gap.",
+ chips:["Ha, to'ladi","«O'ylab ko'ray»","Yo'q"]},
+
+/* === Xulosa (hamma) === */
+{id:'x1',s:'xulosa',c:1,q:"Meni nima hayratlantirdi?",
+ h:"Bo'sh qolsa — siz o'rganmadingiz, gapirdingiz."},
+{id:'x2',s:'xulosa',c:1,q:"3 ta so'zma-so'z iqtibos",
+ h:"O'z so'zingiz bilan qayta yozmang."},
+{id:'x3',s:'xulosa',c:1,q:"Og'riq darajasi — 1 dan 10 gacha",t:'num',
+ h:"Bu odam uchun muammo qanchalik real?"},
+{id:'x4',s:'xulosa',c:1,q:"Olingan majburiyat",
+ chips:["Kontakt/tanishtiruv","Ota-ona raqami","Sinov uchun kelishuv","Pul/bo'nak","Hech narsa"]},
+{id:'x5',s:'xulosa',c:1,q:"Gipotezalarga ta'sir",
+ h:"↑ tasdiqladi · ↓ rad etdi · — signal yo'q",
+ chips:["H1↑","H1↓","H2↑","H2↓","H3↑","H3↓","H5↑","H5↓","H7↑","H7↓","H8↑","H8↓"]},
+{id:'x6',s:'xulosa',q:"Keyingi qadam — nima qilaman?"}
+];
+
+/* ============================================================ */
+let state={view:'home',p:null,a:{},meta:{},t0:0,timer:null,mode:'core',records:[]};
+
+const $=(s,r)=>(r||document).querySelector(s);
+const el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e;};
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2200);}
+function lsGet(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+
+function activeQs(){return Q.filter(q=>!q.w||q.w(state.p));}
+function visibleQs(){const a=activeQs();return state.mode==='core'?a.filter(q=>q.c||q.s==='xulosa'):a;}
+
+/* ---------- capabilities ---------- */
+(async()=>{
+  try{ if(window.claude&&claude.use){ DB=await claude.use('db'); DL=await claude.use('downloads');
+    if(DB){ try{ const snap=await DB.collection('interviews').get();
+      const remote=(snap.docs||[]).map(d=>d.data?d.data():d).filter(Boolean);
+      if(remote.length){ const loc=lsGet(LS_REC,[]); const ids=new Set(loc.map(r=>r.id));
+        remote.forEach(r=>{if(r&&r.id&&!ids.has(r.id))loc.push(r);});
+        loc.sort((a,b)=>(b.at||0)-(a.at||0)); lsSet(LS_REC,loc);
+        if(state.view==='home'||state.view==='archive')render();
+      }}catch(e){}
+    }
+    if(DB||DL) render();
+  }}catch(e){}
+})();
+
+/* ============================================================
+   VIEWS
+   ============================================================ */
+function render(){
+  const app=$('#app');app.innerHTML='';
+  document.querySelectorAll('.bottombar').forEach(n=>n.remove());
+  ({home:vHome,setup:vSetup,run:vRun,archive:vArchive,cfg:vCfg}[state.view]||vHome)(app);
+  window.scrollTo(0,0);
+}
+
+/* ---------- HOME ---------- */
+function vHome(app){
+  const recs=lsGet(LS_REC,[]);
+  const nBola=recs.filter(r=>r.p&&r.p.who==='bola').length;
+  const nOta=recs.filter(r=>r.p&&r.p.who==='ota').length;
+  const nComm=recs.filter(r=>{const v=(r.a&&(r.a.x4||''))+'';return v&&!/Hech narsa/.test(v);}).length;
+
+  const h=el('div','home-head');
+  h.innerHTML=`<span class="kicker">NAVI · CustDev</span>
+    <h1>Suhbat bloknoti</h1>
+    <p class="lede">Suhbatdoshni tanlang — savollar o'zi chiqadi. Javoblarni shu yerda to'ldiring, oxirida jadvalga chiqaring.</p>`;
+  app.appendChild(h);
+
+  const st=el('div','stats');
+  st.innerHTML=`<div class="stat"><b>${recs.length}</b><span>Jami suhbat</span></div>
+    <div class="stat"><b>${nBola}/${nOta}</b><span>Bola / ota-ona</span></div>
+    <div class="stat"><b>${nComm}</b><span>Majburiyat</span></div>`;
+  app.appendChild(st);
+
+  const b1=el('button','btn','+  Yangi suhbat boshlash');
+  b1.onclick=()=>{state.view='setup';state.p={who:'bola',age:'14-16',learn:[],dec:'yoq',mood:'faol'};render();};
+  app.appendChild(b1);
+
+  const b2=el('button','btn ghost small',`Arxiv va jadvalga chiqarish (${recs.length})`);
+  b2.onclick=()=>{state.view='archive';render();};
+  app.appendChild(b2);
+
+  const c=cfg(), nUn=unsynced().length;
+  const b3=el('button','btn ghost small',
+    c.url?(nUn?`Sheets: ${nUn} ta yuborilmagan`:'Sheets: hammasi yuborilgan ✓'):'Google Sheets ulash');
+  b3.onclick=()=>{state.view='cfg';render();};
+  app.appendChild(b3);
+
+  app.appendChild(el('h2',null,"Kim bilan ko'proq gaplashish kerak"));
+  app.appendChild(el('p',null,`<span style="color:var(--muted)">Suhbatlarni shu tartibda taqsimlang — pastdagi ro'yxat foyda tartibida.</span>`));
+  const prio=el('div','prio');
+  [
+   [1,"Hech qayerga bormaydigan + qarori yo'q bola","Sizning haqiqiy nishoningiz. Muammo bormi yoki yo'qmi — javob faqat shu yerdan chiqadi.","6 suhbat",'p1'],
+   [2,"Til kursiga boradigan bolaning ota-onasi","To'lashga tayyorligi ISBOTLANGAN, lekin IT ni tanlamagan. «Nega IT emas?» — eng qimmatli javob.","5 suhbat",'p2'],
+   [3,"IT ni onlayn, o'zi o'rganayotgan bola","H3 (mustaqil format ushlab turadimi) uchun yagona ishonchli manba.","3 suhbat",'p3'],
+   [4,"IT kursida o'qiyotgan bola","Oson topiladi, lekin eng kam yangi ma'lumot beradi. Qaror momenti uchun kerak.","3 suhbat",'p4'],
+   [5,"Loqayd ota-ona","Muhim, lekin ehtimol bozor emas. Tekshirish uchun ozgina.","2 suhbat",'p5']
+  ].forEach(([n,t,w,c,cl])=>{
+    const d=el('div','prio-item '+cl);
+    d.innerHTML=`<span class="prio-n">${n}</span><div><h3>${esc(t)}</h3><p class="prio-why">${esc(w)}</p><span class="prio-count">${esc(c)}</span></div>`;
+    prio.appendChild(d);
+  });
+  app.appendChild(prio);
+
+  const rb=el('div','rulebox');
+  rb.innerHTML=`<span class="rb-label">Suhbat davomida</span><ul>
+    <li>Javobdan keyin <strong>3 soniya jim turing</strong> — eng qimmatli gap ikkinchi jumlada keladi.</li>
+    <li>Har umumiy javobga: <strong>«oxirgi marta qachon?»</strong></li>
+    <li>Iltifot eshitsangiz: «Rahmat, lekin men sen haqingda so'rayapman — o'shanda aniq nima qilgan eding?»</li>
+    <li>Siz gapirgan vaqt <strong>25% dan kam</strong> bo'lsin.</li>
+    <li><strong>Demo yo'q.</strong> NAVI, test, kurs — yopilishgacha og'zingizdan chiqmasin.</li>
+  </ul>`;
+  app.appendChild(rb);
+}
+
+/* ---------- SETUP ---------- */
+function vSetup(app){
+  const bar=el('div','bar');
+  bar.innerHTML=`<button class="bar-back" id="bk">← Orqaga</button>
+    <div class="bar-mid"><span class="bar-title">Suhbatdosh haqida</span>
+    <span class="bar-sub">4 ta savol — keyin savollar chiqadi</span></div>`;
+  app.appendChild(bar);
+  $('#bk',bar).onclick=()=>{state.view='home';render();};
+
+  const p=state.p;
+  const wrap=el('div');
+  app.appendChild(wrap);
+
+  function group(label,sub,opts,val,onPick,multi){
+    const g=el('div','q-setup');
+    g.appendChild(el('label',null,esc(label)+(sub?`<span class="sublab">${esc(sub)}</span>`:'')));
+    const o=el('div','opts');
+    opts.forEach(([k,t])=>{
+      const b=el('button','opt',esc(t));
+      const on=multi?val.includes(k):val===k;
+      b.setAttribute('aria-pressed',on?'true':'false');
+      b.onclick=()=>{onPick(k);draw();};
+      o.appendChild(b);
+    });
+    g.appendChild(o);
+    return g;
+  }
+
+  function draw(){
+    wrap.innerHTML='';
+    wrap.appendChild(group("Kim bilan gaplashyapsiz?",null,P_WHO,p.who,k=>{p.who=k;}));
+    if(p.who==='bola') wrap.appendChild(group("Yoshi",null,P_AGE,p.age,k=>{p.age=k;}));
+    wrap.appendChild(group(
+      p.who==='bola'?"Hozir nima o'qiyapti?":"Farzandi hozir nima o'qiyapti?",
+      "Bir nechtasini tanlash mumkin",P_LEARN,p.learn,k=>{
+        if(k==='yoq'){p.learn=p.learn.includes('yoq')?[]:['yoq'];}
+        else{p.learn=p.learn.filter(x=>x!=='yoq');
+          p.learn=p.learn.includes(k)?p.learn.filter(x=>x!==k):p.learn.concat(k);}
+      },true));
+    if(p.who==='bola')
+      wrap.appendChild(group("Kelajakdagi kasbi haqida qarori bormi?",
+        "Suhbatning eng muhim yo'nalishi shunga bog'liq",P_DEC,p.dec,k=>{p.dec=k;}));
+    else
+      wrap.appendChild(group("Ota-ona qanday?","Farzandi ta'limiga munosabati",P_MOOD,p.mood,k=>{p.mood=k;}));
+
+    const nm=el('div','q-setup');
+    nm.appendChild(el('label',null,"Ism yoki belgi<span class=\"sublab\">Faqat siz uchun — kimligini eslash uchun</span>"));
+    const inp=el('input','txt');inp.type='text';inp.placeholder="masalan: Diyor, 15, 12-maktab";
+    inp.value=p.name||'';inp.oninput=e=>{p.name=e.target.value;};
+    nm.appendChild(inp);wrap.appendChild(nm);
+
+    const n=visiblePreview();
+    const go=el('button','btn',`Boshlash — ${n} ta savol`);
+    go.onclick=start;
+    wrap.appendChild(go);
+    const all=el('p','','');
+    all.style.cssText='text-align:center;color:var(--faint);font-size:13.5px;margin-top:10px;font-family:IBM Plex Mono,monospace';
+    all.textContent=`Qisqa rejim · barcha savollar: ${activeQsFor(p).length}`;
+    wrap.appendChild(all);
+  }
+  function activeQsFor(pp){return Q.filter(q=>!q.w||q.w(pp));}
+  function visiblePreview(){return activeQsFor(p).filter(q=>q.c||q.s==='xulosa').length;}
+  draw();
+}
+
+function start(){
+  state.a={};state.meta={};state.mode='core';state.t0=Date.now();
+  state.view='run';render();
+  clearInterval(state.timer);
+  state.timer=setInterval(()=>{const t=$('#tmr');if(!t)return;
+    const s=Math.floor((Date.now()-state.t0)/1000);
+    t.textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');},1000);
+}
+
+/* ---------- RUN ---------- */
+function vRun(app){
+  const p=state.p;
+  const bar=el('div','bar');
+  bar.innerHTML=`<button class="bar-back" id="bk">←</button>
+    <div class="bar-mid"><span class="bar-title">${esc(p.name||(p.who==='bola'?"Bola":"Ota-ona"))}</span>
+    <span class="bar-sub" id="sub"></span></div><span class="bar-timer" id="tmr">00:00</span>`;
+  app.appendChild(bar);
+  $('#bk',bar).onclick=()=>{if(confirm("Suhbatdan chiqasizmi? Javoblar saqlanmaydi."))
+    {clearInterval(state.timer);state.view='home';render();}};
+
+  const pr=el('div','prog');pr.innerHTML='<i id="pbar"></i>';app.appendChild(pr);
+
+  const mb=el('div','modebar');
+  mb.innerHTML=`<span class="lbl">Rejim</span>
+    <div class="seg"><button id="m1">Qisqa</button><button id="m2">Hammasi</button></div>`;
+  app.appendChild(mb);
+  const setMode=m=>{state.mode=m;$('#m1',mb).setAttribute('aria-pressed',m==='core');
+    $('#m2',mb).setAttribute('aria-pressed',m==='all');drawList();};
+  $('#m1',mb).onclick=()=>setMode('core');
+  $('#m2',mb).onclick=()=>setMode('all');
+
+  const list=el('div');app.appendChild(list);
+  app.appendChild(el('div','footpad'));
+
+  const bb=el('div','bottombar');
+  bb.innerHTML=`<div class="inner"><span class="saveflag" id="sf">saqlandi</span>
+    <button class="btn small" id="fin">Suhbatni yakunlash</button></div>`;
+  document.body.appendChild(bb);
+  $('#fin',bb).onclick=finish;
+
+  function flag(){const f=$('#sf');if(!f)return;f.classList.add('on');clearTimeout(flag._t);
+    flag._t=setTimeout(()=>f.classList.remove('on'),1200);}
+
+  function upd(){
+    const vs=visibleQs();
+    const done=vs.filter(q=>{const v=state.a[q.id];return v&&String(v).trim();}).length;
+    const s=$('#sub');if(s)s.textContent=`${done}/${vs.length} javob`;
+    const b=$('#pbar');if(b)b.style.width=(vs.length?done/vs.length*100:0)+'%';
+    lsSet(LS_DRAFT,{p:state.p,a:state.a,t0:state.t0});
+  }
+
+  function drawList(){
+    list.innerHTML='';
+    const vs=visibleQs();
+    let cur=null;
+    SEC_ORDER.forEach(sec=>{
+      const qs=vs.filter(q=>q.s===sec);
+      if(!qs.length)return;
+      const [tt,sub]=SECS[sec];
+      const st=el('div','sec-title');st.innerHTML=`${esc(tt)} <em>${esc(sub)}</em>`;
+      list.appendChild(st);
+      qs.forEach(q=>list.appendChild(card(q)));
+    });
+    upd();
+  }
+
+  function card(q){
+    const c=el('div','card');
+    const val=state.a[q.id]||'';
+    if(String(val).trim())c.classList.add('done');
+    c.appendChild(el('p','qtext',(q.c?'<span class="star">★</span>':'')+esc(q.q)));
+    if(q.h)c.appendChild(el('p','hint',esc(q.h)));
+
+    if(q.chips){
+      const ch=el('div','chips');
+      q.chips.forEach(t=>{
+        const b=el('button','chip',esc(t));
+        const on=String(state.a[q.id]||'').split(' · ').includes(t);
+        b.setAttribute('aria-pressed',on?'true':'false');
+        b.onclick=()=>{
+          let parts=String(state.a[q.id]||'').split(' · ').filter(Boolean);
+          if(parts.includes(t))parts=parts.filter(x=>x!==t);else parts.push(t);
+          state.a[q.id]=parts.join(' · ');
+          drawList();flag();
+        };
+        ch.appendChild(b);
+      });
+      c.appendChild(ch);
+    }
+
+    if(q.t==='num'){
+      const i=el('input','num');i.type='number';i.inputMode='numeric';i.placeholder='—';
+      i.value=val;
+      i.oninput=e=>{state.a[q.id]=e.target.value;c.classList.toggle('done',!!e.target.value);upd();flag();};
+      c.appendChild(i);
+    }else{
+      const t=el('textarea','txt ansbox');t.rows=2;t.placeholder='Javobni yozing…';
+      t.value=val;
+      t.oninput=e=>{state.a[q.id]=e.target.value;c.classList.toggle('done',!!e.target.value.trim());
+        e.target.style.height='auto';e.target.style.height=(e.target.scrollHeight+2)+'px';upd();flag();};
+      c.appendChild(t);
+      setTimeout(()=>{if(t.value){t.style.height='auto';t.style.height=(t.scrollHeight+2)+'px';}},0);
+    }
+    return c;
+  }
+
+  setMode(state.mode);
+}
+
+/* ---------- FINISH ---------- */
+async function finish(){
+  const vs=visibleQs();
+  const core=vs.filter(q=>q.c);
+  const missing=core.filter(q=>!String(state.a[q.id]||'').trim()).length;
+  if(missing && !confirm(`${missing} ta asosiy savol bo'sh. Baribir yakunlaymizmi?`))return;
+
+  clearInterval(state.timer);
+  const rec={
+    id:'r'+Date.now()+Math.random().toString(36).slice(2,6),
+    at:Date.now(),
+    dur:Math.round((Date.now()-state.t0)/60000),
+    p:JSON.parse(JSON.stringify(state.p)),
+    a:JSON.parse(JSON.stringify(state.a))
+  };
+  const recs=lsGet(LS_REC,[]);recs.unshift(rec);lsSet(LS_REC,recs);
+  localStorage.removeItem(LS_DRAFT);
+  if(DB){try{await DB.doc('interviews/'+rec.id).set(rec);}catch(e){}}
+  toast('Suhbat saqlandi');
+  state.view='archive';render();
+  if(cfg().url)syncAll(true);
+}
+
+/* ---------- ARCHIVE ---------- */
+function vArchive(app){
+  const bar=el('div','bar');
+  bar.innerHTML=`<button class="bar-back" id="bk">← Bosh sahifa</button>
+    <div class="bar-mid"><span class="bar-title">Arxiv</span><span class="bar-sub">Saqlangan suhbatlar</span></div>`;
+  app.appendChild(bar);
+  $('#bk',bar).onclick=()=>{state.view='home';render();};
+
+  const recs=lsGet(LS_REC,[]);
+  if(!recs.length){app.appendChild(el('p','empty',"Hali suhbat yo'q."));}
+
+  const L={it_off:'IT kurs',it_on:'IT onlayn',til:'Til',fan:'Fan',yoq:'Kurs yo\'q'};
+  recs.forEach(r=>{
+    const d=new Date(r.at);
+    const who=r.p.who==='bola'?`Bola ${r.p.age}`:'Ota-ona';
+    const lr=(r.p.learn||[]).map(k=>L[k]||k).join(', ')||'—';
+    const n=Object.values(r.a||{}).filter(v=>String(v).trim()).length;
+    const row=el('div','rec');
+    const mark=cfg().url?(r.synced?' · Sheets ✓':' · yuborilmagan'):'';
+    row.innerHTML=`<div><b>${esc(r.p.name||who)}</b>
+      <span>${who} · ${esc(lr)} · ${n} javob · ${r.dur||0} daq · ${d.getDate()}.${d.getMonth()+1}.${d.getFullYear()}${mark}</span></div>`;
+    const del=el('button','del',"O'chirish");
+    del.onclick=async()=>{if(!confirm("O'chirilsinmi?"))return;
+      lsSet(LS_REC,lsGet(LS_REC,[]).filter(x=>x.id!==r.id));
+      if(DB){try{await DB.doc('interviews/'+r.id).delete();}catch(e){}}
+      render();};
+    row.appendChild(del);
+    app.appendChild(row);
+  });
+
+  if(recs.length){
+    app.appendChild(el('h2',null,"Jadvalga chiqarish"));
+    const b1=el('button','btn',"Jadvalni nusxa olish");
+    b1.onclick=()=>copyTSV(recs);
+    app.appendChild(b1);
+    const p1=el('p',null,'');
+    p1.style.cssText='color:var(--muted);font-size:14px;margin-top:9px;';
+    p1.textContent="Nusxa olib, Google Sheets yoki Excel'da bo'sh katakka qo'ying — ustunlarga o'zi taqsimlanadi.";
+    app.appendChild(p1);
+
+    const b2=el('button','btn ghost small',"CSV fayl sifatida yuklash");
+    b2.onclick=()=>saveCSV(recs);
+    app.appendChild(b2);
+
+    if(cfg().url){
+      const b3=el('button','btn ghost small',`Sheets'ga yuborish (${unsynced().length})`);
+      b3.onclick=()=>syncAll(false);
+      app.appendChild(b3);
+    }
+
+    const ta=el('textarea','txt tsvbox');ta.id='tsvout';ta.readOnly=true;
+    ta.value=buildTable(recs,'\t');
+    app.appendChild(ta);
+  }
+}
+
+/* ---------- export ---------- */
+function columns(){
+  const cols=[['__id','ID'],['sana','Sana'],['davom','Davomiyligi (daq)'],['ism','Ism/belgi'],
+    ['kim','Kim'],['yosh','Yosh'],['oqiydi',"Nima o'qiydi"],['qaror','Kasb qarori'],['ota_turi','Ota-ona turi']];
+  const seen=new Set();
+  SEC_ORDER.forEach(sec=>Q.filter(q=>q.s===sec).forEach(q=>{
+    if(seen.has(q.id))return;seen.add(q.id);
+    cols.push([q.id,(SECS[q.s]?SECS[q.s][0]:'')+' — '+q.q]);
+  }));
+  return cols;
+}
+function rowFor(r,cols){
+  const L={it_off:'IT kurs (offline)',it_on:'IT onlayn (mustaqil)',til:'Til kursi',fan:'Fan/repetitor',yoq:"Kurs yo'q"};
+  const D={yoq:"Yo'q",taxmin:'Taxminan',ha:'Ha'};
+  const d=new Date(r.at);
+  const base={
+    __id:r.id,
+    sana:`${d.getDate()}.${d.getMonth()+1}.${d.getFullYear()}`,
+    davom:r.dur||'',ism:r.p.name||'',
+    kim:r.p.who==='bola'?'Bola':'Ota-ona',
+    yosh:r.p.who==='bola'?r.p.age:'',
+    oqiydi:(r.p.learn||[]).map(k=>L[k]||k).join(', '),
+    qaror:r.p.who==='bola'?(D[r.p.dec]||''):'',
+    ota_turi:r.p.who==='ota'?(r.p.mood==='loqayd'?'Loqayd':'Faol'):''
+  };
+  return cols.map(([k])=>String(base[k]!==undefined?base[k]:(r.a&&r.a[k]!==undefined?r.a[k]:'')));
+}
+function buildTable(recs,sep){
+  const cols=columns();
+  const clean=v=>String(v).replace(/[\r\n\t]+/g,' ').trim();
+  const lines=[cols.map(c=>clean(c[1])).join(sep)];
+  recs.slice().sort((a,b)=>a.at-b.at).forEach(r=>lines.push(rowFor(r,cols).map(clean).join(sep)));
+  return lines.join('\n');
+}
+function buildCSV(recs){
+  const cols=columns();
+  const q=v=>'"'+String(v).replace(/"/g,'""').replace(/\r?\n/g,' ')+'"';
+  const lines=[cols.map(c=>q(c[1])).join(',')];
+  recs.slice().sort((a,b)=>a.at-b.at).forEach(r=>lines.push(rowFor(r,cols).map(q).join(',')));
+  return '﻿'+lines.join('\r\n');
+}
+async function copyTSV(recs){
+  const t=buildTable(recs,'\t');
+  try{await navigator.clipboard.writeText(t);toast('Nusxa olindi — Sheets/Excelga qo\'ying');}
+  catch(e){const ta=$('#tsvout');if(ta){ta.focus();ta.select();
+    try{document.execCommand('copy');toast('Nusxa olindi');}catch(e2){toast('Pastdagi maydondan qo\'lda nusxa oling');}}}
+}
+async function saveCSV(recs){
+  const csv=buildCSV(recs);
+  const name='navi-suhbatlar-'+new Date().toISOString().slice(0,10)+'.csv';
+  if(DL){
+    try{await DL.save({filename:name,data:csv});toast('Fayl saqlandi');return;}
+    catch(e){if(e&&e.code==='declined'){return;}}
+  }
+  try{
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+    a.download=name;document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),3000);
+    toast('Yuklanmoqda…');
+  }catch(e){toast("Yuklab bo'lmadi — «Jadvalni nusxa olish» dan foydalaning");}
+}
+
+/* ============================================================
+   GOOGLE SHEETS SINXRONIZATSIYASI
+   ============================================================ */
+function cfg(){return lsGet(LS_CFG,{url:''});}
+function setCfg(c){lsSet(LS_CFG,c);}
+function unsynced(){return lsGet(LS_REC,[]).filter(r=>!r.synced);}
+
+function payload(rec){
+  const cols=columns();
+  const clean=v=>String(v==null?'':v).replace(/\r?\n/g,' · ');
+  return {id:rec.id,headers:cols.map(c=>c[1]),row:rowFor(rec,cols).map(clean)};
+}
+async function pushOne(rec,url){
+  const body=JSON.stringify(payload(rec));
+  try{
+    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body,redirect:'follow'});
+    if(r.ok)return true;
+  }catch(e){}
+  try{
+    await fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body});
+    return true;
+  }catch(e){return false;}
+}
+async function syncAll(quiet){
+  const c=cfg();
+  if(!c.url){if(!quiet)toast("Avval Sheets manzilini kiriting");return;}
+  const list=unsynced();
+  if(!list.length){if(!quiet)toast("Hammasi yuborilgan");return;}
+  if(!quiet)toast(`${list.length} ta yuborilmoqda…`);
+  let ok=0;
+  for(const rec of list){
+    if(await pushOne(rec,c.url)){
+      ok++;
+      const all=lsGet(LS_REC,[]);
+      const i=all.findIndex(x=>x.id===rec.id);
+      if(i>-1){all[i].synced=true;lsSet(LS_REC,all);}
+    }
+  }
+  if(!quiet)toast(ok?`${ok} ta yuborildi`:"Yuborilmadi — manzilni tekshiring");
+  if(state.view==='archive'||state.view==='home')render();
+}
+
+/* ---------- SOZLAMALAR ---------- */
+function vCfg(app){
+  const c=cfg();
+  const bar=el('div','bar');
+  bar.innerHTML=`<button class="bar-back" id="bk">← Orqaga</button>
+    <div class="bar-mid"><span class="bar-title">Google Sheets</span>
+    <span class="bar-sub">Avtomatik yuborish</span></div>`;
+  app.appendChild(bar);
+  $('#bk',bar).onclick=()=>{state.view='home';render();};
+
+  const inCloud=!!(window.claude&&window.claude.use);
+  if(inCloud){
+    const w=el('div','rulebox');
+    w.style.borderLeftColor='var(--bad)';
+    w.innerHTML=`<span class="rb-label" style="color:var(--bad)">Diqqat</span>
+      <p style="margin:0;font-size:15px">Bu nusxa Claude ichida ochilgan — bu yerda tashqi manzilga yuborish bloklangan.
+      Avtomatik yuborish faqat <strong>Vercel'ga joylangan nusxada</strong> ishlaydi. Bu yerda «Jadvalni nusxa olish» dan foydalaning.</p>`;
+    app.appendChild(w);
+  }
+
+  app.appendChild(el('h2',null,"1 · Jadval tayyorlash"));
+  const steps=el('div','rulebox');
+  steps.style.borderLeftColor='var(--accent)';
+  steps.innerHTML=`<span class="rb-label" style="color:var(--accent)">5 daqiqalik sozlash</span><ul>
+    <li>Google Sheets'da yangi jadval oching.</li>
+    <li><strong>Kengaytmalar → Apps Script</strong>.</li>
+    <li>Men bergan kodni qo'ying va saqlang.</li>
+    <li><strong>Deploy → New deployment → Web app</strong>; «Execute as: Me», «Who has access: Anyone».</li>
+    <li>Chiqqan <strong>Web app URL</strong> ni pastga qo'ying.</li>
+  </ul>`;
+  app.appendChild(steps);
+
+  app.appendChild(el('h2',null,"2 · Web app manzili"));
+  const inp=el('input','txt');inp.type='url';inp.placeholder='https://script.google.com/macros/s/…/exec';
+  inp.value=c.url||'';
+  app.appendChild(inp);
+
+  const save=el('button','btn','Saqlash');
+  save.onclick=()=>{const v=inp.value.trim();
+    if(v&&!/^https:\/\/script\.google\.com\//.test(v)){toast("Manzil script.google.com bilan boshlanishi kerak");return;}
+    setCfg({url:v});toast(v?"Saqlandi":"O'chirildi");render();};
+  app.appendChild(save);
+
+  if(c.url){
+    const t=el('button','btn ghost small','Sinov yozuvini yuborish');
+    t.onclick=async()=>{
+      const demo={id:'test-'+Date.now(),at:Date.now(),dur:0,
+        p:{who:'bola',age:'14-16',learn:['yoq'],dec:'yoq',name:'SINOV — o\'chirib tashlang'},a:{}};
+      toast('Yuborilmoqda…');
+      toast(await pushOne(demo,c.url)?'Yuborildi — jadvalni tekshiring':'Yuborilmadi');
+    };
+    app.appendChild(t);
+    const n=unsynced().length;
+    const s=el('button','btn ghost small',`Yuborilmaganlarni yuborish (${n})`);
+    s.onclick=()=>syncAll(false);
+    app.appendChild(s);
+  }
+}
+
+/* ---------- draft tiklash ---------- */
+(function(){
+  const d=lsGet(LS_DRAFT,null);
+  if(d&&d.a&&Object.keys(d.a).length){
+    setTimeout(()=>{
+      if(confirm("Tugallanmagan suhbat bor. Davom ettiramizmi?")){
+        state.p=d.p;state.a=d.a;state.t0=d.t0||Date.now();state.mode='core';
+        state.view='run';render();
+        clearInterval(state.timer);
+        state.timer=setInterval(()=>{const t=$('#tmr');if(!t)return;
+          const s=Math.floor((Date.now()-state.t0)/1000);
+          t.textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');},1000);
+      }else localStorage.removeItem(LS_DRAFT);
+    },400);
+  }
+})();
+
+render();
+</script>
+
+</body>
+</html>
