@@ -233,6 +233,11 @@ input.num{
    NAVI — suhbat bloknoti
    ============================================================ */
 const LS_REC='navi_records_v1', LS_DRAFT='navi_draft_v1', LS_CFG='navi_cfg_v1';
+
+/* Sheets manzili kodga yozilgan — localStorage domenga bog'liq bo'lgani uchun
+   (localhost / vercel.app / telefon) har safar qayta kiritish shart bo'lmasin.
+   Sozlamalarda boshqa manzil saqlansa, o'sha ustun turadi. */
+const DEFAULT_SHEETS_URL='https://script.google.com/macros/s/AKfycbxQka5ZQRWDvQD65oysdGtmTUjPRSoaW00T1C6hVV0jvVDbvwoOkJb057F7zVmYsW0EsQ/exec';
 const APPS_SCRIPT = "function doPost(e){\n  var lock = LockService.getScriptLock();\n  lock.waitLock(20000);\n  try{\n    var d  = JSON.parse(e.postData.contents);\n    var sh = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];\n\n    // --- suhbatni o'chirish (ID bo'yicha) ---\n    if(d.action === 'delete'){\n      var n = sh.getLastRow();\n      if(n > 1){\n        var ids = sh.getRange(2, 1, n - 1, 1).getValues();\n        for(var i = ids.length - 1; i >= 0; i--){\n          if(String(ids[i][0]) === String(d.id)) sh.deleteRow(i + 2);\n        }\n      }\n      return out({ok:true, action:'delete', id:d.id});\n    }\n\n    // --- yangi suhbat qo'shish ---\n    if(sh.getLastRow() === 0){\n      sh.appendRow(d.headers);\n      sh.setFrozenRows(1);\n    }\n    var last = sh.getLastRow();\n    var have = [];\n    if(last > 1){\n      have = sh.getRange(2, 1, last - 1, 1).getValues().map(function(r){ return String(r[0]); });\n    }\n    if(have.indexOf(String(d.id)) === -1) sh.appendRow(d.row);\n\n    return out({ok:true, action:'add', id:d.id});\n  }catch(err){\n    return out({ok:false, error:String(err)});\n  }finally{\n    lock.releaseLock();\n  }\n}\n\nfunction out(o){\n  return ContentService.createTextOutput(JSON.stringify(o))\n    .setMimeType(ContentService.MimeType.JSON);\n}";
 let DB=null;
 
@@ -895,7 +900,11 @@ function buildTable(recs,sep){
 /* ============================================================
    GOOGLE SHEETS SINXRONIZATSIYASI
    ============================================================ */
-function cfg(){return lsGet(LS_CFG,{url:''});}
+function cfg(){
+  const c=lsGet(LS_CFG,null);
+  if(!c||typeof c.url!=='string')return{url:DEFAULT_SHEETS_URL};
+  return c;
+}
 function setCfg(c){lsSet(LS_CFG,c);}
 function unsynced(){return lsGet(LS_REC,[]).filter(r=>!r.synced);}
 
