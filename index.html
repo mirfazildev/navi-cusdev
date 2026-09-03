@@ -183,6 +183,17 @@ p{margin:0 0 12px;}
   font-weight:600;margin-right:5px;}
 .card .hint{font-size:14px;color:var(--muted);font-style:italic;margin:0 0 10px;}
 .card .qtext + .ansbox{margin-top:10px;}
+.scale-wrap{margin:2px 0 4px;}
+.scale-lab{display:flex;justify-content:space-between;gap:12px;margin:0 0 7px;
+  font-size:13px;color:var(--muted);line-height:1.35;}
+.scale-lab b{color:var(--ink);font-family:"IBM Plex Mono",monospace;}
+.scale{display:grid;grid-template-columns:repeat(10,1fr);gap:5px;}
+.sc{
+  border:1px solid var(--line);background:var(--surface-2);border-radius:8px;
+  padding:11px 0;font-family:"IBM Plex Mono",monospace;font-size:15px;font-weight:600;
+  color:var(--ink);cursor:pointer;
+}
+.sc[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--bg);}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 9px;}
 .chip{
   border:1px solid var(--line);background:var(--surface-2);border-radius:16px;
@@ -286,10 +297,13 @@ const Q=[
  h:"Davom: bu fikr qachondan beri shunday? Bir yil oldin ham shu edimi?",
  chips:["Bilmayman / o'ylamaganman","Bir nechta variant bor","Aniq bilaman",
         "Ota-onam aytgan kasb","«Pul topadigan biror narsa»"]},
-{id:'q2b',s:'asos',c:1,t:'num',col:"Ishonch (1-10)",
- q:"Shu fikringga 1 dan 10 gacha qanchalik ishonasan?"},
-{id:'m_holat',s:'asos',c:1,m:1,col:"◆ Holat",
+{id:'q2b',s:'asos',c:1,t:'scale',col:"Ishonch (1-10)",
+ q:"Shu fikringga qanchalik ishonasan?",
+ lo:"shunchaki aytdim, o'zgarishi mumkin",hi:"aniq shu bo'laman, o'zgarmayman",
+ h:"Raqamni bolaning o'zi tanlasin — siz taxmin qilmang."},
+{id:'m_holat',s:'asos',c:1,m:1,one:1,col:"◆ Holat",
  q:"Holat — kasbini biladimi?",
+ h:"2-savoldagi javobga qarab bittasini tanlang.",
  chips:["Bilmaydi","Taxminan","Aniq"]},
 
 {id:'q3',s:'asos',c:1,col:"3 · Oxirgi marta qachon o'ylagan",
@@ -303,14 +317,15 @@ const Q=[
  h:"Suhbatdagi eng muhim savol. Davom: nima topding? Foydasi bo'ldimi? Yana qildingmi yoki to'xtading — nega to'xtading?",
  chips:["Hech narsa qilmadim","Ota-onamdan so'radim","Akam / opam / do'stimdan so'radim",
         "YouTube / TikTok'da video ko'rdim","Google'da qidirdim","Test topshirdim","Kursga yozildim"]},
-{id:'m_harakat',s:'asos',c:1,m:1,col:"◆ Harakat",
- q:"Harakat — mustaqil yechim izlaganmi?",
- h:"«Hech narsa» — to'liq javob. Mustaqil yechim izlamagan odam bizning yechimimizni ham sotib olmaydi.",
+{id:'m_harakat',s:'asos',c:1,m:1,one:1,col:"◆ Harakat",
+ q:"Harakat — o'zi biror narsa qilganmi?",
+ h:"4-savoldagi javobga qarab bittasini tanlang. «Hech narsa» — to'liq javob: mustaqil yechim izlamagan odam bizning yechimimizni ham sotib olmaydi.",
  chips:["Hech narsa","So'ragan","Qidirgan","Test topshirgan","Kursga borgan"]},
 
-{id:'q5',s:'asos',c:1,t:'num',col:"◆ Og'riq (1-10)",
- q:"Kelajaging noaniqligi seni qanchalik bezovta qiladi — 1 dan 10 gacha? Umuman bezovta qilmasa 1, juda ko'p o'ylantirsa 10.",
- h:"1–3: «hali vaqt bor» · 4–6: «ba'zida o'ylayman» · 7–10: «har kuni o'ylayman», «do'stlarim biladi, men yo'q»"},
+{id:'q5',s:'asos',c:1,t:'scale',col:"◆ Og'riq (1-10)",
+ q:"Kim bo'lishingni bilmasliging seni bezovta qiladimi?",
+ lo:"umuman bezovta qilmaydi",hi:"har kuni o'ylantiradi",
+ h:"Raqamni bolaning o'zi aytsin. Odatda: 1–3 «hali vaqt bor» · 4–6 «ba'zida o'ylayman» · 7–10 «har kuni o'ylayman». 7 va undan yuqori = og'riq bor."},
 {id:'q5b',s:'asos',col:"5b · Nega shu raqam",
  q:"Nega aynan shu raqam? Qachon ko'proq o'ylaysan — kechqurunmi, imtihon oldidanmi, kimdir so'raganidami?"},
 
@@ -319,8 +334,8 @@ const Q=[
  h:"Davom: o'shanda nima qilding? Kimdir yordam berdimi?",
  chips:["Yo'q, bo'lmagan","Qarindoshlar so'raganda javob topolmadim","Maktabda yo'nalish tanlashda",
         "Do'stlarim gapirganda jim turdim","Ota-onam bilan janjal","Kursga yozilishda qaysi birini bilmadim"]},
-{id:'m_voqea',s:'asos',c:1,m:1,col:"◆ Real voqea",
- q:"Real voqea bormi?",
+{id:'m_voqea',s:'asos',c:1,m:1,one:1,col:"◆ Real voqea",
+ q:"Real voqea bormi — bilmaslik tufayli haqiqatan noqulay bo'lganmi?",
  h:"«Yo'q» ham javob — demak og'riq yo'q, va bu normal.",
  chips:["Ha","Yo'q"]},
 
@@ -349,8 +364,8 @@ const Q=[
 {id:'q10',s:'onlayn',c:1,t:'num',col:"◆ Eng uzun seriya (kun)",
  q:"Duolingo yoki shunga o'xshash ilovada eng uzun ketma-ket seriyang necha kun? Ochib ko'rsat-chi.",
  h:"Ekranni ko'ring. 12 bolada ham 7 kundan kam chiqsa — o'qituvchisiz format ishlamaydi."},
-{id:'m_seriya',s:'onlayn',c:1,m:1,col:"◆ Seriya manbai",
- q:"Bu raqam qayerdan?",
+{id:'m_seriya',s:'onlayn',c:1,m:1,one:1,col:"◆ Seriya manbai",
+ q:"Yuqoridagi raqam qayerdan olindi?",
  chips:["Ekrandan ko'rildi","Aytdi, ko'rsatmadi","Ilova yo'q"]},
 
 /* ===== Yopilish ===== */
@@ -366,11 +381,13 @@ const Q=[
  chips:["Raqam berdi","«So'rab ko'raman»","Yo'q"]},
 
 /* ===== Suhbatdan keyin ===== */
-{id:'m_kvadrat',s:'xulosa',c:1,m:1,col:"◆ Kvadrat",
- q:"Kvadrat — og'riq va harakat kesishmasi",
- h:"① mijoz, yechim izlab yuribdi · ② to'siq bor, marketing muammosi · ③ mijoz ota-ona, bola foydalanuvchi · ④ bozor emas",
- chips:["① Og'riq bor + harakat qilgan","② Og'riq bor + hech narsa qilmagan",
-        "③ Og'riq yo'q + harakat qilgan","④ Og'riq yo'q + hech narsa qilmagan"]},
+{id:'m_kvadrat',s:'xulosa',c:1,m:1,one:1,col:"◆ Kvadrat",
+ q:"Kvadrat — bu bola bizga kim bo'ladi?",
+ h:"Yuqoridagi ikki maydonga qarang. «◆ Og'riq» 7 dan katta bo'lsa — og'riq BOR, kichik bo'lsa — YO'Q. «◆ Harakat» «Hech narsa» bo'lsa — harakat YO'Q, qolgan hammasi — harakat BOR. Ikkovining kesishmasini tanlang.",
+ chips:["① Og'riq bor + harakat bor — MIJOZ, yechim izlab yuribdi",
+        "② Og'riq bor + harakat yo'q — TO'SIQ bor, marketing muammosi",
+        "③ Og'riq yo'q + harakat bor — mijoz OTA-ONA, bola foydalanuvchi",
+        "④ Og'riq yo'q + harakat yo'q — BOZOR EMAS"]},
 {id:'x_gap',s:'xulosa',c:1,col:"3 ta gap",
  q:"U aytgan 3 ta gapni shundayligicha yozing — o'z so'zingiz bilan emas.",
  h:"Misol: «Menga hech kim tushuntirmadi, shuning uchun tashlab yubordim»."},
@@ -640,9 +657,12 @@ function vRun(app){
         const on=String(state.a[q.id]||'').split(' · ').includes(t);
         b.setAttribute('aria-pressed',on?'true':'false');
         b.onclick=()=>{
-          let parts=String(state.a[q.id]||'').split(' · ').filter(Boolean);
-          if(parts.includes(t))parts=parts.filter(x=>x!==t);else parts.push(t);
-          state.a[q.id]=parts.join(' · ');
+          if(q.one){ state.a[q.id]=(state.a[q.id]===t)?'':t; }
+          else{
+            let parts=String(state.a[q.id]||'').split(' · ').filter(Boolean);
+            if(parts.includes(t))parts=parts.filter(x=>x!==t);else parts.push(t);
+            state.a[q.id]=parts.join(' · ');
+          }
           drawList();flag();
         };
         ch.appendChild(b);
@@ -650,7 +670,22 @@ function vRun(app){
       c.appendChild(ch);
     }
 
-    if(q.t==='num'){
+    if(q.t==='scale'){
+      const sw=el('div','scale-wrap');
+      const lab=el('div','scale-lab');
+      lab.innerHTML=`<span><b>1</b> — ${esc(q.lo||'')}</span><span><b>10</b> — ${esc(q.hi||'')}</span>`;
+      sw.appendChild(lab);
+      const sc=el('div','scale');
+      for(let i=1;i<=10;i++){
+        const b=el('button','sc',String(i));
+        b.setAttribute('aria-pressed',String(val)===String(i)?'true':'false');
+        b.onclick=()=>{state.a[q.id]=(String(state.a[q.id])===String(i))?'':String(i);
+          drawList();flag();};
+        sc.appendChild(b);
+      }
+      sw.appendChild(sc);
+      c.appendChild(sw);
+    }else if(q.t==='num'){
       const i=el('input','num');i.type='number';i.inputMode='numeric';i.placeholder='—';
       i.value=val;
       i.oninput=e=>{state.a[q.id]=e.target.value;c.classList.toggle('done',!!e.target.value);upd();flag();};
