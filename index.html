@@ -120,7 +120,7 @@ p{margin:0 0 12px;}
 .prio-count{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--faint);
   display:block;margin-top:5px;letter-spacing:.04em;}
 
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);
   border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:16px 0 0;}
 .stat{background:var(--surface);padding:13px 10px;text-align:center;}
 .stat b{font-family:"Archivo",sans-serif;font-size:23px;display:block;color:var(--accent);
@@ -252,12 +252,15 @@ const LS_REC='navi_records_v1', LS_DRAFT='navi_draft_v1', LS_CFG='navi_cfg_v1';
 /* Sheets manzili kodga yozilgan — localStorage domenga bog'liq bo'lgani uchun
    (localhost / vercel.app / telefon) har safar qayta kiritish shart bo'lmasin.
    Sozlamalarda boshqa manzil saqlansa, o'sha ustun turadi. */
-const SHEET_NAME="1 · Kasb og'rig'i — bola";
+const SHEET_BOLA="1 · Kasb og'rig'i — bola";
+const SHEET_OTA="2 · Ota-ona — telefon";
+const sheetFor=p=>(((p&&p.who)==='ota')?SHEET_OTA:SHEET_BOLA);
 const DEFAULT_SHEETS_URL='https://script.google.com/macros/s/AKfycbxQka5ZQRWDvQD65oysdGtmTUjPRSoaW00T1C6hVV0jvVDbvwoOkJb057F7zVmYsW0EsQ/exec';
-const APPS_SCRIPT = "function doPost(e){\n  var lock = LockService.getScriptLock();\n  lock.waitLock(20000);\n  try{\n    var d  = JSON.parse(e.postData.contents);\n    var sh = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];\n\n    // --- suhbatni o'chirish (ID bo'yicha) ---\n    if(d.action === 'delete'){\n      var n = sh.getLastRow();\n      if(n > 1){\n        var ids = sh.getRange(2, 1, n - 1, 1).getValues();\n        for(var i = ids.length - 1; i >= 0; i--){\n          if(String(ids[i][0]) === String(d.id)) sh.deleteRow(i + 2);\n        }\n      }\n      return out({ok:true, action:'delete', id:d.id});\n    }\n\n    // --- yangi suhbat qo'shish ---\n    if(sh.getLastRow() === 0){\n      if(d.sheet){ try{ sh.setName(d.sheet); }catch(e){} }\n      sh.appendRow(d.headers);\n      sh.setFrozenRows(1);\n    }\n    var last = sh.getLastRow();\n    var have = [];\n    if(last > 1){\n      have = sh.getRange(2, 1, last - 1, 1).getValues().map(function(r){ return String(r[0]); });\n    }\n    if(have.indexOf(String(d.id)) === -1) sh.appendRow(d.row);\n\n    return out({ok:true, action:'add', id:d.id});\n  }catch(err){\n    return out({ok:false, error:String(err)});\n  }finally{\n    lock.releaseLock();\n  }\n}\n\nfunction out(o){\n  return ContentService.createTextOutput(JSON.stringify(o))\n    .setMimeType(ContentService.MimeType.JSON);\n}";
+const APPS_SCRIPT = "function doPost(e){\n  var lock = LockService.getScriptLock();\n  lock.waitLock(20000);\n  try{\n    var d  = JSON.parse(e.postData.contents);\n    var ss = SpreadsheetApp.getActiveSpreadsheet();\n    var sh = d.sheet ? (ss.getSheetByName(d.sheet) || ss.insertSheet(d.sheet)) : ss.getSheets()[0];\n\n    // --- suhbatni o'chirish (ID bo'yicha) ---\n    if(d.action === 'delete'){\n      var n = sh.getLastRow();\n      if(n > 1){\n        var ids = sh.getRange(2, 1, n - 1, 1).getValues();\n        for(var i = ids.length - 1; i >= 0; i--){\n          if(String(ids[i][0]) === String(d.id)) sh.deleteRow(i + 2);\n        }\n      }\n      return out({ok:true, action:'delete', id:d.id});\n    }\n\n    // --- yangi suhbat qo'shish ---\n    if(sh.getLastRow() === 0){\n      sh.appendRow(d.headers);\n      sh.setFrozenRows(1);\n    }\n    var last = sh.getLastRow();\n    var have = [];\n    if(last > 1){\n      have = sh.getRange(2, 1, last - 1, 1).getValues().map(function(r){ return String(r[0]); });\n    }\n    if(have.indexOf(String(d.id)) === -1) sh.appendRow(d.row);\n\n    return out({ok:true, action:'add', id:d.id});\n  }catch(err){\n    return out({ok:false, error:String(err)});\n  }finally{\n    lock.releaseLock();\n  }\n}\n\nfunction out(o){\n  return ContentService.createTextOutput(JSON.stringify(o))\n    .setMimeType(ContentService.MimeType.JSON);\n}";
 let DB=null;
 
 /* ---------- profil maydonlari ---------- */
+const P_WHO=[['bola',"Bola — 25 daqiqa"],['ota',"Ota-ona — telefon, 5 daqiqa"]];
 const P_AGE=[['12-13','12–13'],['14-16','14–16'],['17+','17+']];
 const P_LEARN=[
   ['it_off',"IT kursi (offline)"],
@@ -271,13 +274,22 @@ const P_SRC=[['tanish',"Tanish orqali"],['oquvchi',"Mening o'quvchim"],
 
 /* ---------- bo'limlar · NAVI-custdev-bola-1.md ---------- */
 const SECS={
-  kirish:["Isinish","1 ta savol — tinglang, tahlil qilmang"],
-  asos:["Asosiy · Kasb noaniqligi","Holat · Og'riq · Harakat"],
-  onlayn:["Onlayn o'rganish","Bizning format ushlab turadimi"],
-  yopilish:["Yopilish","Gap emas, harakat"],
-  xulosa:["Suhbatdan keyin","5 daqiqa — darhol to'ldiring"]
+  /* CustDev #1 — bola bilan, 25 daqiqa */
+  kirish:["Isinish","1 ta savol — tinglang, tahlil qilmang",'bola'],
+  asos:["Asosiy · Kasb noaniqligi","Holat · Og'riq · Harakat",'bola'],
+  onlayn:["Onlayn o'rganish","Bizning format ushlab turadimi",'bola'],
+  yopilish:["Yopilish","Gap emas, harakat",'bola'],
+  xulosa:["Suhbatdan keyin","5 daqiqa — darhol to'ldiring",'bola'],
+  /* CustDev #2 — ota-ona bilan telefonda, 5 daqiqa */
+  p_savol:["5 ta savol","Telefonda · tartib bilan",'ota'],
+  p_yopilish:["Yopilish","30 soniya",'ota'],
+  p_xulosa:["Qo'ng'iroqdan keyin","3 daqiqa — darhol to'ldiring",'ota']
 };
-const SEC_ORDER=['kirish','asos','onlayn','yopilish','xulosa'];
+const SEC_ORDER=['kirish','asos','onlayn','yopilish','xulosa','p_savol','p_yopilish','p_xulosa'];
+const secWho=sec=>SECS[sec]?SECS[sec][2]:null;
+/* Savol matnidagi [BOLA] o'rniga bolaning ismi qo'yiladi —
+   telefonda «farzandingiz» emas, ismini aytish kerak. */
+const qText=q=>String(q.q).replace(/\[BOLA\]/g,(state.p&&state.p.child)||'farzandingiz');
 
 /* ---------- savollar · 12 savol + belgilash maydonlari ----------
    c:1 = majburiy · m:1 = siz belgilaysiz, so'ramaysiz
@@ -398,7 +410,74 @@ const Q=[
  q:"Suhbatdan qo'lga nima tekkan?",
  chips:["Sinfdosh ismi","Ota-ona raqami","Hech narsa"]},
 {id:'x_keyingi',s:'xulosa',col:"Keyingi qadam",
- q:"Bu suhbatdan keyin men nima qilaman?"}
+ q:"Bu suhbatdan keyin men nima qilaman?"},
+
+/* ============================================================
+   CustDev #2 · OTA-ONA BILAN TELEFON SUHBATI — 5 daqiqa
+   NAVI-custdev-ota-ona-tel_1.md
+   ============================================================ */
+{id:'p1',s:'p_savol',c:1,col:"1 · Sabab (so'zma-so'z)",
+ q:"[BOLA]ni kursga berish fikri qanday paydo bo'lgan edi — o'zi so'radimi, siz taklif qildingizmi? O'shanda nima turtki bo'ldi?",
+ h:"Butun qo'ng'iroqdagi eng muhim savol. Javobni SO'ZMA-SO'Z yozing — bu bizning reklama matnimiz bo'ladi. Davom: «o'zi so'radi» desa — «siz darrov rozi bo'ldingizmi yoki o'ylab ko'rdingizmi?»; «biz berdik» desa — «nega aynan IT va nega aynan o'sha paytda?»",
+ chips:["Bola o'zi so'radi, biz rozi bo'ldik","Telefonda o'tirib qolgani uchun",
+        "Tanish/qarindosh bolasini ko'rib","Kelajagi bo'lsin, IT pul topadi",
+        "Maktabda yaxshi o'qimaydi"]},
+{id:'pm_qaror',s:'p_savol',c:1,m:1,one:1,col:"◆ Qaror",
+ q:"Qarorni kim qabul qilgan?",
+ h:"1-savoldagi javobga qarab bittasini tanlang.",
+ chips:["Bola so'radi","Ota-ona taklif qildi","Birga"]},
+
+{id:'p2',s:'p_savol',c:1,col:"2 · Kanal",
+ q:"Kursni qayerdan topgan edingiz? Boshqalarini ham ko'rib chiqdingizmi — nega aynan shunisi?",
+ h:"Bir nechtasini ko'rgan bo'lsa: «tanlashda nima qiyin bo'ldi?» — bu «qaysi kursga berishni bilmayman» og'rig'ini tekshiradi.",
+ chips:["Tanish/qarindosh tavsiya qildi","Instagram / Telegram reklama","Bola o'zi topdi",
+        "Uyga yaqin","Boshqalarini ko'rmadik","2–3 tasini ko'rdik"]},
+
+{id:'p3',s:'p_savol',c:1,col:"3 · Pul (izoh)",
+ q:"Oyiga qancha to'laysiz? [BOLA]ning boshqa kurslari yoki repetitorlari ham bormi — hammasi jami qancha bo'ladi?",
+ h:"Raqamni aniq oling. «Taxminan» bo'lsa ham yozing. Aytolmasa — bu ham fakt: qaror ham, pul ham boshqa odamda."},
+{id:'pm_pul_it',s:'p_savol',c:1,t:'num',col:"◆ Kurs uchun (ming so'm)",
+ q:"Shu kursga oyiga — ming so'mda",
+ h:"Masalan 600 = 600 000 so'm. Aytolmasa bo'sh qoldiring."},
+{id:'pm_pul_jami',s:'p_savol',c:1,t:'num',col:"◆ Jami ta'limga (ming so'm)",
+ q:"Ta'limga oyiga jami — ming so'mda",
+ h:"Hamma kurs, repetitor, to'garak qo'shilib. Bizning narximiz shu raqamdan 30–50% past bo'lishi kerak."},
+{id:'pm_pul_aniq',s:'p_savol',c:1,m:1,one:1,col:"◆ Pul aniqligi",
+ q:"Summani qanday aytdi?",
+ h:"Aytolmasa — bu ham fakt: qaror ham, pul ham boshqa odamda.",
+ chips:["Aniq aytdi","Taxminan aytdi","Aytolmadi"]},
+
+{id:'p4',s:'p_savol',c:1,col:"4 · Tashvish (so'zma-so'z)",
+ q:"Kursga yozdirishdan oldin nima ikkilantirdi yoki tashvishlantirdi?",
+ h:"Ota-onaning haqiqiy og'rig'i. «Hech narsa» — bu ham javob. So'zma-so'z yozing.",
+ chips:["Tashlab qo'yadimi deb","Pul bekor ketmasin","Qaysi kurs haqiqiy — bilmadim",
+        "Yoshi kichik, erta emasmi","Hech narsa, darrov berdik"]},
+
+{id:'p5',s:'p_savol',c:1,col:"5 · Kelajak",
+ q:"[BOLA] kelajakda kim bo'lishi haqida oxirgi marta qachon gaplashgansizlar? Sizningcha, u biladimi? Bu sizni tashvishlantiradimi?",
+ h:"«Tashvishlantiradi» desa: «nimasi? oxirgi marta qachon shu haqda o'ylab qoldingiz?» · «Yo'q, hali vaqt bor» desa — yozing va davom etmang.",
+ chips:["Ha, biladi — IT deb qo'ygan","Bilmaydi, lekin hali yosh, vaqt bor",
+        "Bilmaydi va bu meni tashvishlantiradi","Biz aytamiz, u eshitmaydi","Har oy fikri o'zgaradi"]},
+{id:'pm_biladi',s:'p_savol',c:1,m:1,one:1,col:"◆ Bola biladimi",
+ q:"Ota-onaning fikricha, bola kasbini biladimi?",
+ chips:["Biladi","Bilmaydi"]},
+{id:'pm_tashvish',s:'p_savol',c:1,m:1,one:1,col:"◆ Tashvishlantiradimi",
+ q:"Bu ota-onani tashvishlantiradimi?",
+ h:"Asosiy gipoteza — ota-ona tomonidan. «Hali vaqt bor» = og'riq yo'q.",
+ chips:["Ha, tashvishlantiradi","Yo'q","«Hali vaqt bor»"]},
+
+{id:'p6',s:'p_yopilish',c:1,one:1,col:"6 · Tanish raqami",
+ q:"Shu yoshda bolasi bor 1–2 ta tanishingiz bormi — ular bilan ham 5 daqiqa gaplashsam? Raqamini bersangiz yoki menikini bersangiz.",
+ h:"Raqam bermasa — «yo'q» deb yozing. «So'rab ko'raman» — 3 kundan keyin o'zingiz eslatib yozing.",
+ chips:["Raqam berdi","«So'rab ko'raman, yozaman»","Yo'q"]},
+{id:'p6b',s:'p_yopilish',col:"6b · Kimning raqami",
+ q:"Kim? Ismi va raqamini yozing."},
+
+{id:'px_hayrat',s:'p_xulosa',c:1,col:"Hayrat",
+ q:"Meni nima hayratlantirdi?",
+ h:"Bo'sh qolsa — siz o'rganmadingiz, ko'proq o'zingiz gapirgansiz."},
+{id:'px_keyingi',s:'p_xulosa',col:"Keyingi qadam",
+ q:"Bu qo'ng'iroqdan keyin men nima qilaman?"}
 ];
 
 /* ============================================================ */
@@ -412,8 +491,9 @@ function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');setT
 function lsGet(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 
-function activeQs(){return Q.filter(q=>!q.w||q.w(state.p));}
-function visibleQs(){const a=activeQs();return state.mode==='core'?a.filter(q=>q.c||q.s==='xulosa'):a;}
+function activeQs(){return Q.filter(q=>secWho(q.s)===(state.p.who||'bola')&&(!q.w||q.w(state.p)));}
+const isXulosa=q=>q.s==='xulosa'||q.s==='p_xulosa';
+function visibleQs(){const a=activeQs();return state.mode==='core'?a.filter(q=>q.c||isXulosa(q)):a;}
 
 /* ---------- capabilities ---------- */
 (async()=>{
@@ -443,8 +523,11 @@ function render(){
 /* ---------- HOME ---------- */
 function vHome(app){
   const recs=lsGet(LS_REC,[]);
-  const nOgriq=recs.filter(r=>{const n=parseFloat(r.a&&r.a.q5);return !isNaN(n)&&n>=7;}).length;
+  const isOtaRec=r=>(r.p&&r.p.who)==='ota';
+  const nBola=recs.filter(r=>!isOtaRec(r)).length;
+  const nOta=recs.filter(isOtaRec).length;
   const nMijoz=recs.filter(r=>/[①②]/.test(String((r.a&&r.a.m_kvadrat)||''))).length;
+  const nTash=recs.filter(r=>/^Ha,/.test(String((r.a&&r.a.pm_tashvish)||''))).length;
 
   const h=el('div','home-head');
   h.innerHTML=`<span class="kicker">NAVI · CustDev #1</span>
@@ -453,14 +536,21 @@ function vHome(app){
   app.appendChild(h);
 
   const st=el('div','stats');
-  st.innerHTML=`<div class="stat"><b>${recs.length}/12</b><span>Suhbat</span></div>
-    <div class="stat"><b>${nOgriq}</b><span>Og'riq ≥ 7</span></div>
-    <div class="stat"><b>${nMijoz}</b><span>① + ② mijoz</span></div>`;
+  st.innerHTML=`<div class="stat"><b>${nBola}/12</b><span>Bola suhbati</span></div>
+    <div class="stat"><b>${nOta}/8</b><span>Ota-ona qo'ng'irog'i</span></div>
+    <div class="stat"><b>${nMijoz}</b><span>① + ② mijoz</span></div>
+    <div class="stat"><b>${nTash}</b><span>Tashvishlanadi</span></div>`;
   app.appendChild(st);
 
-  const b1=el('button','btn','+  Yangi suhbat boshlash');
-  b1.onclick=()=>{state.view='setup';state.p={age:'14-16',learn:[],src:'tanish'};render();};
+  const b1=el('button','btn',"+  Bola bilan suhbat  ·  25 daq");
+  b1.onclick=()=>{state.view='setup';
+    state.p={who:'bola',age:'14-16',learn:[],src:'tanish'};render();};
   app.appendChild(b1);
+
+  const b1b=el('button','btn',"+  Ota-onaga qo'ng'iroq  ·  5 daq");
+  b1b.onclick=()=>{state.view='setup';
+    state.p={who:'ota',learn:[],name:'',child:''};render();};
+  app.appendChild(b1b);
 
   const b2=el('button','btn ghost small',`Arxiv va jadvalga chiqarish (${recs.length})`);
   b2.onclick=()=>{state.view='archive';render();};
@@ -496,6 +586,20 @@ function vHome(app){
   </ul>`;
   app.appendChild(kb);
 
+  app.appendChild(el('h2',null,"Ota-onaga qo'ng'iroq — CustDev #2"));
+  const pb=el('div','rulebox');
+  pb.style.borderLeftColor='var(--accent)';
+  pb.innerHTML=`<span class="rb-label" style="color:var(--accent)">Telefon qoidalari</span><ul>
+    <li><strong>Vaqti: 19:00–21:00.</strong> Kunduzi ishda — javob bermaydi yoki shoshadi.</li>
+    <li><strong>Savolni o'qimang — ayting.</strong> Skriptni oldindan 2 marta o'qing, keyin telefonni oling.</li>
+    <li><strong>Bolaning ismini ishlating.</strong> «Farzandingiz» emas — sozlamada ismini yozsangiz, savollarga o'zi qo'yiladi.</li>
+    <li>Javobdan keyin <strong>2 soniya jim turing.</strong> Telefonda sukut tezroq to'ldiriladi.</li>
+    <li>NAVI haqida so'rasa: «tadqiqot tugagach albatta aytaman» — va davom eting.</li>
+    <li><strong>5 daqiqadan oshmang.</strong> Va'da berdingiz. Gapirgisi kelsa — u o'zi cho'zadi, siz emas.</li>
+  </ul>`;
+  app.appendChild(pb);
+
+  app.appendChild(el('h2',null,"Bola bilan suhbat — CustDev #1"));
   const rb=el('div','rulebox');
   rb.innerHTML=`<span class="rb-label">Suhbat davomida — 4 qoida</span><ul>
     <li>Javobdan keyin <strong>3 soniya jim turing.</strong> Eng qimmatli gap ikkinchi jumlada keladi.</li>
@@ -510,8 +614,8 @@ function vHome(app){
 function vSetup(app){
   const bar=el('div','bar');
   bar.innerHTML=`<button class="bar-back" id="bk">← Orqaga</button>
-    <div class="bar-mid"><span class="bar-title">Bola haqida</span>
-    <span class="bar-sub">3 ta belgi — keyin savollar chiqadi</span></div>`;
+    <div class="bar-mid"><span class="bar-title">Suhbatdosh haqida</span>
+    <span class="bar-sub">Bir necha belgi — keyin savollar chiqadi</span></div>`;
   app.appendChild(bar);
   $('#bk',bar).onclick=()=>{state.view='home';render();};
 
@@ -536,21 +640,38 @@ function vSetup(app){
 
   function draw(){
     wrap.innerHTML='';
-    wrap.appendChild(group("Yoshi","Nishon — 14–16",P_AGE,p.age,k=>{p.age=k;}));
-    wrap.appendChild(group("Hozir qayerda o'qiydi?","Bir nechtasini tanlash mumkin",
-      P_LEARN,p.learn,k=>{
+    wrap.appendChild(group("Kim bilan gaplashyapsiz?",null,P_WHO,p.who,k=>{p.who=k;}));
+
+    if(p.who==='bola') wrap.appendChild(group("Yoshi","Nishon — 14–16",P_AGE,p.age,k=>{p.age=k;}));
+
+    wrap.appendChild(group(
+      p.who==='bola'?"Hozir qayerda o'qiydi?":"Farzandi qayerda o'qiydi?",
+      "Bir nechtasini tanlash mumkin",P_LEARN,p.learn,k=>{
         if(k==='yoq'){p.learn=p.learn.includes('yoq')?[]:['yoq'];}
         else{p.learn=p.learn.filter(x=>x!=='yoq');
           p.learn=p.learn.includes(k)?p.learn.filter(x=>x!==k):p.learn.concat(k);}
       },true));
-    wrap.appendChild(group("Qayerdan topildi?","Ustoz-o'quvchi masofasi javobga ta'sir qiladi",
-      P_SRC,p.src,k=>{p.src=k;}));
 
-    const nm=el('div','q-setup');
-    nm.appendChild(el('label',null,"Ism yoki belgi<span class=\"sublab\">Faqat siz uchun — kimligini eslash uchun</span>"));
-    const inp=el('input','txt');inp.type='text';inp.placeholder="masalan: Diyor, 15, 12-maktab";
-    inp.value=p.name||'';inp.oninput=e=>{p.name=e.target.value;};
-    nm.appendChild(inp);wrap.appendChild(nm);
+    if(p.who==='bola')
+      wrap.appendChild(group("Qayerdan topildi?","Ustoz-o'quvchi masofasi javobga ta'sir qiladi",
+        P_SRC,p.src,k=>{p.src=k;}));
+
+    const txt=(lab,sub,ph,val,on)=>{
+      const g=el('div','q-setup');
+      g.appendChild(el('label',null,esc(lab)+(sub?`<span class="sublab">${esc(sub)}</span>`:'')));
+      const i=el('input','txt');i.type='text';i.placeholder=ph;i.value=val||'';
+      i.oninput=e=>{on(e.target.value);};
+      g.appendChild(i);wrap.appendChild(g);
+    };
+    if(p.who==='ota'){
+      txt("Ota-ona ismi","Qo'ng'iroqda shu ism bilan murojaat qiling",
+        "masalan: Ozodbek aka",p.name,v=>{p.name=v;});
+      txt("Bola ismi","Savollarda «farzandingiz» emas, shu ism ishlatiladi",
+        "masalan: Miraziz",p.child,v=>{p.child=v;});
+    }else{
+      txt("Ism yoki belgi","Faqat siz uchun — kimligini eslash uchun",
+        "masalan: Diyor, 15, 12-maktab",p.name,v=>{p.name=v;});
+    }
 
     const n=visiblePreview();
     const go=el('button','btn',`Boshlash — ${n} ta savol`);
@@ -561,8 +682,8 @@ function vSetup(app){
     all.textContent=`Qisqa rejim · barcha savollar: ${activeQsFor(p).length}`;
     wrap.appendChild(all);
   }
-  function activeQsFor(pp){return Q.filter(q=>!q.w||q.w(pp));}
-  function visiblePreview(){return activeQsFor(p).filter(q=>q.c||q.s==='xulosa').length;}
+  function activeQsFor(pp){return Q.filter(q=>secWho(q.s)===(pp.who||'bola')&&(!q.w||q.w(pp)));}
+  function visiblePreview(){return activeQsFor(p).filter(q=>q.c||isXulosa(q)).length;}
   draw();
 }
 
@@ -580,7 +701,7 @@ function vRun(app){
   const p=state.p;
   const bar=el('div','bar');
   bar.innerHTML=`<button class="bar-back" id="bk">←</button>
-    <div class="bar-mid"><span class="bar-title">${esc(p.name||'Bola')}</span>
+    <div class="bar-mid"><span class="bar-title">${esc(p.name||(p.who==='ota'?'Ota-ona':'Bola'))}</span>
     <span class="bar-sub" id="sub"></span></div><span class="bar-timer" id="tmr">00:00</span>`;
   app.appendChild(bar);
   $('#bk',bar).onclick=()=>{if(confirm("Suhbatdan chiqasizmi? Javoblar saqlanmaydi."))
@@ -597,14 +718,31 @@ function vRun(app){
   $('#m1',mb).onclick=()=>setMode('core');
   $('#m2',mb).onclick=()=>setMode('all');
 
+  const bolaIsm=esc(p.child||'[bola]'), otaIsm=esc(p.name||'[ota-ona]');
   const op=el('div','rulebox');
   op.style.borderLeftColor='var(--accent)';
-  op.innerHTML=`<span class="rb-label" style="color:var(--accent)">Ochilish — so'zma-so'z ayting</span>
-    <p style="margin:0;font-size:15.5px;line-height:1.5">«Bugun ustoz sifatida emas. Men o'smirlar kelajagi haqida qanday
-    o'ylashini o'rganyapman — bu tadqiqot. Hech narsa sotmayman, taklif qilmayman, baholamayman.
-    To'g'ri yoki noto'g'ri javob yo'q. Menga aniq voqealar kerak — qachon, nima bo'ldi, nima qilding.
-    "Odatda" degan javoblar yordam bermaydi. 25 daqiqa. Yozib olsam bo'ladimi?»</p>`;
+  op.innerHTML=p.who==='ota'
+    ? `<span class="rb-label" style="color:var(--accent)">Ochilish — 20 soniya, so'zma-so'z</span>
+       <p style="margin:0 0 8px;font-size:15.5px;line-height:1.5">«Assalomu alaykum, ${otaIsm}. Men Mirfazil,
+       ${bolaIsm} bilan kecha suhbatlashgan edim, u sizning raqamingizni berdi. Men o'smirlar ta'limi bo'yicha
+       tadqiqot qilyapman — hech narsa sotmayman, taklif qilmayman. 5 daqiqa vaqtingiz bormi? 5 ta savol, xolos.»</p>
+       <p style="margin:0;font-size:14px;color:var(--muted);font-style:italic">«Hozir bandman» desa —
+       «qachon qulay, kechqurun 8 dami?» Vaqt oling va qayta qo'ng'iroq qiling.
+       Shoshib gaplashgan ota-ona hech narsa bermaydi.</p>`
+    : `<span class="rb-label" style="color:var(--accent)">Ochilish — so'zma-so'z ayting</span>
+       <p style="margin:0;font-size:15.5px;line-height:1.5">«Bugun ustoz sifatida emas. Men o'smirlar kelajagi haqida qanday
+       o'ylashini o'rganyapman — bu tadqiqot. Hech narsa sotmayman, taklif qilmayman, baholamayman.
+       To'g'ri yoki noto'g'ri javob yo'q. Menga aniq voqealar kerak — qachon, nima bo'ldi, nima qilding.
+       "Odatda" degan javoblar yordam bermaydi. 25 daqiqa. Yozib olsam bo'ladimi?»</p>`;
   app.appendChild(op);
+
+  if(p.who==='ota'){
+    const yp=el('div','rulebox');
+    yp.innerHTML=`<span class="rb-label">Yopilishdan oldin</span>
+      <p style="margin:0;font-size:15px">5 daqiqa tugaganda to'xtang — va'da bergansiz. Oxirgi savolni
+      («tanishingiz bormi») albatta bering: keyingi qo'ng'iroqlar shundan chiqadi.</p>`;
+    app.appendChild(yp);
+  }
 
   const list=el('div');app.appendChild(list);
   app.appendChild(el('div','footpad'));
@@ -647,7 +785,7 @@ function vRun(app){
     if(String(val).trim())c.classList.add('done');
     if(q.m){c.classList.add('mark');
       c.appendChild(el('span','mark-lab',"Siz belgilaysiz — so'ramang"));}
-    c.appendChild(el('p','qtext',(q.c?'<span class="star">★</span>':'')+esc(q.q)));
+    c.appendChild(el('p','qtext',(q.c?'<span class="star">★</span>':'')+esc(qText(q))));
     if(q.h)c.appendChild(el('p','hint',esc(q.h)));
 
     if(q.chips){
@@ -741,7 +879,9 @@ function vArchive(app){
   const L={it_off:'IT kurs',it_on:'IT onlayn',til:'Til',fan:'Fan',yoq:'Kurs yo\'q'};
   recs.forEach(r=>{
     const d=new Date(r.at);
-    const who=`Bola ${r.p.age||''}`.trim();
+    const who=r.p.who==='ota'
+      ? `Ota-ona${r.p.child?' · '+r.p.child:''}`
+      : `Bola ${r.p.age||''}`.trim();
     const lr=(r.p.learn||[]).map(k=>L[k]||k).join(', ')||'—';
     const n=Object.values(r.a||{}).filter(v=>String(v).trim()).length;
     const row=el('div','rec');
@@ -759,7 +899,7 @@ function vArchive(app){
       render();
       if(c.url){
         toast("O'chirilmoqda\u2026");
-        toast(await deleteOne(r.id,c.url)?"O'chirildi \u2014 Sheets'dan ham":"Ilovadan o'chdi, Sheets'dan o'chmadi");
+        toast(await deleteOne(r,c.url)?"O'chirildi \u2014 Sheets'dan ham":"Ilovadan o'chdi, Sheets'dan o'chmadi");
       }};
     row.appendChild(del);
     app.appendChild(row);
@@ -767,12 +907,10 @@ function vArchive(app){
 
   if(recs.length){
     app.appendChild(el('h2',null,"Jadvalga chiqarish"));
-    const b1=el('button','btn',"Jadvalni nusxa olish");
-    b1.onclick=()=>copyTSV(recs);
-    app.appendChild(b1);
     const p1=el('p',null,'');
-    p1.style.cssText='color:var(--muted);font-size:14px;margin-top:9px;';
-    p1.textContent="Nusxa olib, Google Sheets yoki Excel'da bo'sh katakka qo'ying — ustunlarga o'zi taqsimlanadi.";
+    p1.style.cssText='color:var(--muted);font-size:14px;margin:0 0 14px;';
+    p1.textContent="Ikki protokolning ustunlari boshqa-boshqa, shuning uchun ikki alohida jadval. "
+      +"Nusxa olib, Sheets'da mos bo'lim ichidagi bo'sh katakka qo'ying.";
     app.appendChild(p1);
 
     if(cfg().url){
@@ -781,18 +919,46 @@ function vArchive(app){
       app.appendChild(b3);
     }
 
-    const ta=el('textarea','txt tsvbox');ta.id='tsvout';ta.readOnly=true;
-    ta.value=buildTable(recs,'\t');
-    app.appendChild(ta);
+    [['bola',"Bola suhbatlari",SHEET_BOLA],['ota',"Ota-ona qo'ng'iroqlari",SHEET_OTA]]
+      .forEach(([who,nom,sheet])=>{
+        const list=recs.filter(r=>((r.p&&r.p.who)||'bola')===who);
+        if(!list.length)return;
+        const hh=el('h3',null,`${esc(nom)} (${list.length})`);
+        hh.style.cssText='margin:20px 0 3px;';
+        app.appendChild(hh);
+        const sub=el('p',null,'');
+        sub.style.cssText='color:var(--faint);font-size:13px;margin:0 0 9px;font-family:IBM Plex Mono,monospace;';
+        sub.textContent=`Sheets bo'limi: ${sheet}`;
+        app.appendChild(sub);
+        const ta=el('textarea','txt tsvbox');ta.readOnly=true;ta.value=buildTable(list,'\t',who);
+        const b=el('button','btn ghost small',"Shu jadvalni nusxa olish");
+        b.onclick=()=>copyTSV(ta,b);
+        app.appendChild(b);app.appendChild(ta);
+      });
   }
 }
 
 /* ---------- export ---------- */
-function columns(){
-  const cols=[['__id','ID'],['sana','Sana'],['davom','Davomiyligi (daq)'],['ism','Ism/belgi'],
-    ['yosh','Yosh'],['oqiydi',"Qayerda o'qiydi"],['topildi','Qayerdan topildi']];
+async function copyTSV(ta,btn){
+  let ok=false;
+  try{ await navigator.clipboard.writeText(ta.value); ok=true; }
+  catch(e){
+    try{ ta.focus();ta.select();ok=document.execCommand('copy'); }catch(e2){ ok=false; }
+  }
+  if(!ok){ toast("Nusxa olinmadi — maydondan qo'lda belgilang"); return; }
+  toast('Jadval nusxa olindi');
+  if(btn){ const t=btn.textContent; btn.textContent='Nusxa olindi ✓';
+    setTimeout(()=>{btn.textContent=t;},1400); }
+}
+function columns(who){
+  who=who||'bola';
+  const cols = who==='ota'
+    ? [['__id','ID'],['sana','Sana'],['davom','Davomiyligi (daq)'],['ism','Ota-ona'],
+       ['bola','Bola'],['oqiydi',"Bola qayerda o'qiydi"]]
+    : [['__id','ID'],['sana','Sana'],['davom','Davomiyligi (daq)'],['ism','Ism/belgi'],
+       ['yosh','Yosh'],['oqiydi',"Qayerda o'qiydi"],['topildi','Qayerdan topildi']];
   const seen=new Set();
-  SEC_ORDER.forEach(sec=>Q.filter(q=>q.s===sec).forEach(q=>{
+  SEC_ORDER.filter(sec=>secWho(sec)===who).forEach(sec=>Q.filter(q=>q.s===sec).forEach(q=>{
     if(seen.has(q.id))return;seen.add(q.id);
     cols.push([q.id,q.col||((SECS[q.s]?SECS[q.s][0]:'')+' — '+q.q)]);
   }));
@@ -807,14 +973,15 @@ function rowFor(r,cols){
     __id:r.id,
     sana:`${d.getDate()}.${d.getMonth()+1}.${d.getFullYear()}`,
     davom:r.dur||'',ism:r.p.name||'',
+    bola:r.p.child||'',
     yosh:r.p.age||'',
     oqiydi:(r.p.learn||[]).map(k=>L[k]||k).join(', '),
     topildi:S[r.p.src]||''
   };
   return cols.map(([k])=>String(base[k]!==undefined?base[k]:(r.a&&r.a[k]!==undefined?r.a[k]:'')));
 }
-function buildTable(recs,sep){
-  const cols=columns();
+function buildTable(recs,sep,who){
+  const cols=columns(who);
   const clean=v=>String(v).replace(/[\r\n\t]+/g,' ').trim();
   const lines=[cols.map(c=>clean(c[1])).join(sep)];
   recs.slice().sort((a,b)=>a.at-b.at).forEach(r=>lines.push(rowFor(r,cols).map(clean).join(sep)));
@@ -832,9 +999,9 @@ function setCfg(c){lsSet(LS_CFG,c);}
 function unsynced(){return lsGet(LS_REC,[]).filter(r=>!r.synced);}
 
 function payload(rec){
-  const cols=columns();
+  const cols=columns((rec.p&&rec.p.who)||'bola');
   const clean=v=>String(v==null?'':v).replace(/\r?\n/g,' · ');
-  return {id:rec.id,sheet:SHEET_NAME,headers:cols.map(c=>c[1]),row:rowFor(rec,cols).map(clean)};
+  return {id:rec.id,sheet:sheetFor(rec.p),headers:cols.map(c=>c[1]),row:rowFor(rec,cols).map(clean)};
 }
 async function postTo(url,body){
   try{
@@ -846,8 +1013,8 @@ async function postTo(url,body){
     return true;
   }catch(e){return false;}
 }
-async function deleteOne(id,url){
-  return postTo(url,JSON.stringify({action:'delete',id:id}));
+async function deleteOne(rec,url){
+  return postTo(url,JSON.stringify({action:'delete',id:rec.id,sheet:sheetFor(rec.p)}));
 }
 async function pushOne(rec,url){
   return postTo(url,JSON.stringify(payload(rec)));
