@@ -174,6 +174,10 @@ p{margin:0 0 12px;}
   padding:15px 16px 14px;margin-bottom:11px;
 }
 .card.done{border-color:var(--accent);}
+.card.mark{background:var(--surface-2);border-left:3px solid var(--warn);}
+.card.mark .qtext{font-size:16px;}
+.mark-lab{display:block;font-family:"IBM Plex Mono",monospace;font-size:10px;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--warn);margin-bottom:6px;}
 .card .qtext{font-size:18px;line-height:1.4;margin:0 0 4px;}
 .card .star{color:var(--accent);font-family:"IBM Plex Mono",monospace;font-size:13px;
   font-weight:600;margin-right:5px;}
@@ -237,12 +241,12 @@ const LS_REC='navi_records_v1', LS_DRAFT='navi_draft_v1', LS_CFG='navi_cfg_v1';
 /* Sheets manzili kodga yozilgan — localStorage domenga bog'liq bo'lgani uchun
    (localhost / vercel.app / telefon) har safar qayta kiritish shart bo'lmasin.
    Sozlamalarda boshqa manzil saqlansa, o'sha ustun turadi. */
+const SHEET_NAME="1 · Kasb og'rig'i — bola";
 const DEFAULT_SHEETS_URL='https://script.google.com/macros/s/AKfycbxQka5ZQRWDvQD65oysdGtmTUjPRSoaW00T1C6hVV0jvVDbvwoOkJb057F7zVmYsW0EsQ/exec';
-const APPS_SCRIPT = "function doPost(e){\n  var lock = LockService.getScriptLock();\n  lock.waitLock(20000);\n  try{\n    var d  = JSON.parse(e.postData.contents);\n    var sh = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];\n\n    // --- suhbatni o'chirish (ID bo'yicha) ---\n    if(d.action === 'delete'){\n      var n = sh.getLastRow();\n      if(n > 1){\n        var ids = sh.getRange(2, 1, n - 1, 1).getValues();\n        for(var i = ids.length - 1; i >= 0; i--){\n          if(String(ids[i][0]) === String(d.id)) sh.deleteRow(i + 2);\n        }\n      }\n      return out({ok:true, action:'delete', id:d.id});\n    }\n\n    // --- yangi suhbat qo'shish ---\n    if(sh.getLastRow() === 0){\n      sh.appendRow(d.headers);\n      sh.setFrozenRows(1);\n    }\n    var last = sh.getLastRow();\n    var have = [];\n    if(last > 1){\n      have = sh.getRange(2, 1, last - 1, 1).getValues().map(function(r){ return String(r[0]); });\n    }\n    if(have.indexOf(String(d.id)) === -1) sh.appendRow(d.row);\n\n    return out({ok:true, action:'add', id:d.id});\n  }catch(err){\n    return out({ok:false, error:String(err)});\n  }finally{\n    lock.releaseLock();\n  }\n}\n\nfunction out(o){\n  return ContentService.createTextOutput(JSON.stringify(o))\n    .setMimeType(ContentService.MimeType.JSON);\n}";
+const APPS_SCRIPT = "function doPost(e){\n  var lock = LockService.getScriptLock();\n  lock.waitLock(20000);\n  try{\n    var d  = JSON.parse(e.postData.contents);\n    var sh = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];\n\n    // --- suhbatni o'chirish (ID bo'yicha) ---\n    if(d.action === 'delete'){\n      var n = sh.getLastRow();\n      if(n > 1){\n        var ids = sh.getRange(2, 1, n - 1, 1).getValues();\n        for(var i = ids.length - 1; i >= 0; i--){\n          if(String(ids[i][0]) === String(d.id)) sh.deleteRow(i + 2);\n        }\n      }\n      return out({ok:true, action:'delete', id:d.id});\n    }\n\n    // --- yangi suhbat qo'shish ---\n    if(sh.getLastRow() === 0){\n      if(d.sheet){ try{ sh.setName(d.sheet); }catch(e){} }\n      sh.appendRow(d.headers);\n      sh.setFrozenRows(1);\n    }\n    var last = sh.getLastRow();\n    var have = [];\n    if(last > 1){\n      have = sh.getRange(2, 1, last - 1, 1).getValues().map(function(r){ return String(r[0]); });\n    }\n    if(have.indexOf(String(d.id)) === -1) sh.appendRow(d.row);\n\n    return out({ok:true, action:'add', id:d.id});\n  }catch(err){\n    return out({ok:false, error:String(err)});\n  }finally{\n    lock.releaseLock();\n  }\n}\n\nfunction out(o){\n  return ContentService.createTextOutput(JSON.stringify(o))\n    .setMimeType(ContentService.MimeType.JSON);\n}";
 let DB=null;
 
 /* ---------- profil maydonlari ---------- */
-const P_WHO=[['bola',"Bola / o'smir"],['ota',"Ota-ona"]];
 const P_AGE=[['12-13','12–13'],['14-16','14–16'],['17+','17+']];
 const P_LEARN=[
   ['it_off',"IT kursi (offline)"],
@@ -251,330 +255,132 @@ const P_LEARN=[
   ['fan',"Fan / repetitor"],
   ['yoq',"Hech qayerga bormaydi"]
 ];
-const P_DEC=[['yoq',"Yo'q, bilmaydi"],['taxmin',"Taxminan bor"],['ha',"Ha, aniq"]];
-const P_MOOD=[['faol',"Faol — izlaydi, to'laydi"],['loqayd',"Loqayd — aralashmaydi"]];
+const P_SRC=[['tanish',"Tanish orqali"],['oquvchi',"Mening o'quvchim"],
+             ['maktab',"Maktab orqali"],['boshqa',"Boshqa"]];
 
-/* ---------- bo'limlar (NAVI-savollar.md dagi 18 blok) ---------- */
+/* ---------- bo'limlar · NAVI-custdev-bola-1.md ---------- */
 const SECS={
-  kirish:["Blok 1 · Isinish","Aniq voqea so'rang — «odatda» emas"],
-  raqamli:["Blok 2 · Raqamli hayot","AI va dasturchi haqidagi tasavvur"],
-  signal:["Blok 3 · Tashqi signal","Signal olganda nima qilgan"],
-  qaror_yoq:["Blok 4 · Kasbni hali bilmaydi","Asosiy blok — og'riq bormi"],
-  qaror_bor:["Blok 5 · Kasbni tanlagan","Voqeani so'rang, sababni emas"],
-  organish:["Blok 6 · Mustaqil o'rganish","Tashlab ketish nuqtasi"],
-  it_off:["Blok 7 · IT kursi","Kanal, pul, ushlab turuvchi kuch"],
-  it_on:["Blok 8 · IT onlayn, mustaqil","Eng qimmatli ma'lumot"],
-  til:["Blok 9 · Til kursi","To'lovchi oila — nega IT emas"],
-  fan:["Blok 10 · Fan / repetitor","Muqobil yo'l"],
-  yoq:["Blok 11 · Hech qayerga bormaydi","To'siq nima"],
-  yopilish:["Blok 12 · Yopilish","Gap emas, harakat"],
-  p_holat:["Blok 13 · Bugungi holat","Og'riq va oqibat"],
-  p_tarix:["Blok 14 · Oxirgi bir yil","Pul faktlari"],
-  p_kasb:["Blok 15 · Kasb tanlash","Ilgari aynan nima qilgan"],
-  p_pul:["Blok 16 · Byudjet va qaror","Kim to'laydi, kim hal qiladi"],
-  p_yopilish:["Blok 17 · Yopilish","Bo'nak testi"],
-  xulosa:["Blok 18 · Suhbatdan keyin","5 daqiqa — darhol to'ldiring"]
+  kirish:["Isinish","1 ta savol — tinglang, tahlil qilmang"],
+  asos:["Asosiy · Kasb noaniqligi","Holat · Og'riq · Harakat"],
+  onlayn:["Onlayn o'rganish","Bizning format ushlab turadimi"],
+  yopilish:["Yopilish","Gap emas, harakat"],
+  xulosa:["Suhbatdan keyin","5 daqiqa — darhol to'ldiring"]
 };
-const SEC_ORDER=['kirish','raqamli','signal','qaror_yoq','qaror_bor','organish',
-                 'it_off','it_on','til','fan','yoq','yopilish',
-                 'p_holat','p_tarix','p_kasb','p_pul','p_yopilish','xulosa'];
+const SEC_ORDER=['kirish','asos','onlayn','yopilish','xulosa'];
 
-/* ---------- yordamchi shartlar ---------- */
-const isBola=p=>p.who==='bola', isOta=p=>p.who==='ota';
-const has=(p,k)=>(p.learn||[]).includes(k);
-/* Blok 4 vs 5: qarori yo'q yoki taxminiy bo'lsa — 4, aniq tanlagan bo'lsa — 5 */
-const decYoq=p=>isBola(p)&&p.dec!=='ha', decBor=p=>isBola(p)&&p.dec==='ha';
-/* Kursni qayerdan topgan — 29, 46, 69-savollarda bir xil ro'yxat */
-const KANAL=["Instagram","Telegram kanal","TikTok","Tanish/qarindosh","Maktab o'qituvchisi",
-             "Ko'chadagi banner","YouTube blogger","Google qidiruv","IT Park"];
-
-/* ---------- savollar banki · NAVI-savollar.md (2026-sentyabr) ----------
-   id = hujjatdagi savol raqami. c:1 = ★ majburiy savol.                  */
+/* ---------- savollar · 12 savol + belgilash maydonlari ----------
+   c:1 = majburiy · m:1 = siz belgilaysiz, so'ramaysiz
+   col  = Google Sheets ustuni nomi                                  */
 const Q=[
 
-/* ===== Blok 1 · Isinish — hamma bola ===== */
-{id:'q1',s:'kirish',w:isBola,c:1,
+/* ===== Isinish ===== */
+{id:'q1',s:'kirish',c:1,col:"1 · Kecha nima qildi",
  q:"Kecha maktabdan keyin nima qilding? Uyga kelganingdan uxlaguningcha aytib ber.",
- h:"«Odatda» emas — aynan kecha. Qisqa javob bersa: «keyin nima qilding?» deb davom ettiring."},
-{id:'q2',s:'kirish',w:isBola,c:1,
- q:"Telefoningda ekran vaqtini ochib ko'rsat-chi — bu hafta eng ko'p ishlatgan 3 ta ilovang qaysi?",
- h:"Ekranni o'z ko'zingiz bilan ko'ring. Aytilganiga emas, ko'ringaniga ishoning.",
- chips:["TikTok","Instagram","YouTube","Telegram","O'yin","Boshqa"]},
-{id:'q3',s:'kirish',w:isBola,
- q:"Bu hafta hech kim majbur qilmasdan, o'zing xohlab nimadir o'rgandingmi? Nimani?"},
-{id:'q4',s:'kirish',w:isBola,c:1,
- q:"Uyingizda kompyuter yoki noutbuk bormi, kimniki? Unda nimalarni qila olasan — fayl yaratish, papka ochish, hujjat yozish, prezentatsiya?",
- h:"Mahsulot kompyuter talab qiladi. «Faqat telefon» — jiddiy cheklov, albatta yozib qo'ying.",
- chips:["Kompyuter yo'q","Faqat telefon","Bor, umumiy","Bor, o'zimniki",
-        "Fayl/papka","Word hujjat","Prezentatsiya","Excel","Faqat brauzer","Deyarli hech narsa"]},
+ h:"Qisqa aytsa: «keyin nima qilding?» — «keyin?» — «keyin?»",
+ chips:["Uyda telefon / o'yin","Kursga bordim","Do'stlar bilan yurdim","Uy vazifasi",
+        "Uy ishlari / ukam-singlimga qaradim","Ishladim"]},
 
-/* ===== Blok 2 · Raqamli hayot va tasavvur — hamma bola ===== */
-{id:'q5',s:'raqamli',w:isBola,c:1,
- q:"ChatGPT yoki boshqa sun'iy intellektdan foydalanasanmi? Oxirgi marta nima uchun ishlatgan eding?",
- chips:["Uy vazifasi","Insho yozish","Savol berish","Rasm chizdirish","Tarjima","Ishlatmayman"]},
-{id:'q6',s:'raqamli',w:isBola,
- q:"Dasturchi ishda nima qiladi deb o'ylaysan? Bir kuni qanday o'tadi?",
- h:"Bu bolaning boshidagi tasavvur. To'g'ri-noto'g'riligi muhim emas — u qanday tushunsa, marketing ham shunday gapirishi kerak."},
+/* ===== Asosiy — kasb noaniqligi ===== */
+{id:'q2',s:'asos',c:1,col:"2 · Kasb fikri",
+ q:"Kelajakda kim bo'lishing haqida hozir qanday fikring bor?",
+ h:"Davom: bu fikr qachondan beri shunday? Bir yil oldin ham shu edimi?",
+ chips:["Bilmayman / o'ylamaganman","Bir nechta variant bor","Aniq bilaman",
+        "Ota-onam aytgan kasb","«Pul topadigan biror narsa»"]},
+{id:'q2b',s:'asos',c:1,t:'num',col:"Ishonch (1-10)",
+ q:"Shu fikringga 1 dan 10 gacha qanchalik ishonasan?"},
+{id:'m_holat',s:'asos',c:1,m:1,col:"◆ Holat",
+ q:"Holat — kasbini biladimi?",
+ chips:["Bilmaydi","Taxminan","Aniq"]},
 
-/* ===== Blok 3 · Kasb bo'yicha tashqi signal — hamma bola ===== */
-{id:'q7',s:'signal',w:isBola,c:1,
- q:"Maktabda kasb tanlash bo'yicha test yoki suhbat bo'lganmi? Natijasida nima bo'ldi?",
- h:"Diagnostika testimiz aynan shunday signal beradi. Ilgari signal olganda nima qilganini bilsak — testimizdan keyin nima bo'lishini ham bilamiz.",
- chips:["Bo'lgan","Bo'lmagan"]},
-{id:'q8',s:'signal',w:isBola,
- q:"Kimdir senga «sening shunga qobiliyating bor» deganmi? Kim edi va sen shundan keyin nima qilding?"},
+{id:'q3',s:'asos',c:1,col:"3 · Oxirgi marta qachon o'ylagan",
+ q:"Kelajaging haqida oxirgi marta qachon o'ylagan eding? Nima sabab bo'ldi?",
+ h:"Davom: qayerda eding, kim bilan? Kim nima dedi? Shundan keyin nima his qilding?",
+ chips:["Shu hafta","Shu oy","Eslolmayman","Maktabda so'rashdi","Ota-onam gapirdi",
+        "Qarindosh so'radi","Video / reels ko'rdim","Do'stim kursga bordi","O'zimcha, sababsiz"]},
 
-/* ===== Blok 4 · Kasb tanlash — hali bilmaydigan bola ===== */
-{id:'q9',s:'qaror_yoq',w:decYoq,c:1,
- q:"Kelajakda qaysi kasbni tanlashing haqida oxirgi marta qachon o'ylagan eding?",
- chips:["Shu hafta","Shu oy","Bir necha oy oldin","Bir yildan oshdi","Eslolmayman"]},
-{id:'q10',s:'qaror_yoq',w:decYoq,c:1,
- q:"Kasb haqida o'ylashingga nima sabab bo'lgan edi? Kimdir gap aytdimi, biror video ko'rdingmi, maktabda so'rashdimi?",
- chips:["Ota-onam aytdi","O'qituvchi aytdi","Do'stlar bilan gaplashdik","Video ko'rdim",
-        "Maktabda so'rashdi","O'zimcha o'ylab qoldim"]},
-{id:'q11',s:'qaror_yoq',w:decYoq,c:1,
- q:"Kasb haqida o'ylaganingda biror narsa qilib ko'rdingmi — kimdandir so'radingmi, internetdan qidirdingmi?",
- h:"Butun suhbatdagi eng muhim savol. «Hech narsa qilmadim» — to'liq javob, albatta belgilang: mustaqil yechim izlamagan odam bizning yechimimizni ham sotib olmaydi.",
- chips:["Hech narsa qilmadim","Ota-onamdan so'radim","Do'stimdan so'radim",
-        "Internetdan qidirdim","Video ko'rdim","Test topshirdim"]},
-{id:'q12',s:'qaror_yoq',w:decYoq,c:1,t:'num',
- q:"Kim bo'lishingni hali bilmasliging seni qanchalik bezovta qiladi? Umuman bezovta qilmasa — 1, juda ko'p o'ylantirsa — 10."},
-{id:'q13',s:'qaror_yoq',w:decYoq,c:1,
- q:"Kim bo'lishingni bilmasliging tufayli noqulay ahvolga tushgan payting bo'lganmi? Qanday holat edi?",
- h:"«Yo'q, bo'lmagan» ham qimmatli javob — demak bu hozircha hal qilinishi shart bo'lgan muammo emas.",
- chips:["Ha, bo'lgan","Yo'q, bo'lmagan"]},
-{id:'q14',s:'qaror_yoq',w:decYoq,
- q:"Kasb tanlash haqida uyda yoki do'stlaring bilan gaplashasanmi? Kim senga nima deydi?"},
-{id:'q15',s:'qaror_yoq',w:decYoq,
- q:"Sinfdoshlaringdan qanchasi kim bo'lishini bilgan deb o'ylaysan? Ular hozir nima qilishyapti?"},
+{id:'q4',s:'asos',c:1,col:"4 · Nima qilib ko'rgan",
+ q:"Bu haqda biror narsa qilib ko'rdingmi — kimdandir so'radingmi, internetdan qidirdingmi, test topshirdingmi?",
+ h:"Suhbatdagi eng muhim savol. Davom: nima topding? Foydasi bo'ldimi? Yana qildingmi yoki to'xtading — nega to'xtading?",
+ chips:["Hech narsa qilmadim","Ota-onamdan so'radim","Akam / opam / do'stimdan so'radim",
+        "YouTube / TikTok'da video ko'rdim","Google'da qidirdim","Test topshirdim","Kursga yozildim"]},
+{id:'m_harakat',s:'asos',c:1,m:1,col:"◆ Harakat",
+ q:"Harakat — mustaqil yechim izlaganmi?",
+ h:"«Hech narsa» — to'liq javob. Mustaqil yechim izlamagan odam bizning yechimimizni ham sotib olmaydi.",
+ chips:["Hech narsa","So'ragan","Qidirgan","Test topshirgan","Kursga borgan"]},
 
-/* ===== Blok 5 · Kasb tanlash — allaqachon tanlagan bola ===== */
-{id:'q16',s:'qaror_bor',w:decBor,c:1,
- q:"Hozirgi yo'nalishingni tanlashdan oldin nima bo'lishni o'ylab yurgan eding?"},
-{id:'q17',s:'qaror_bor',w:decBor,c:1,
- q:"Bu yo'nalishga qiziqishing qachon boshlangan — nechinchi sinfda, taxminan qaysi oyda?"},
-{id:'q18',s:'qaror_bor',w:decBor,c:1,
- q:"Qiziqib qolishingga nima sabab bo'lgan? Kim nima dedi, nima ko'rding, qayerda eding?",
- h:"«Nega tanlading?» deb so'ramang — tayyor, qayta ishlangan javob beradi. Voqeani so'rang: kim, qachon, qayerda."},
-{id:'q19',s:'qaror_bor',w:decBor,c:1,
- q:"Tanlaganingdan keyin birinchi nima qilding? Aynan qanday qadam tashlading?"},
-{id:'q20',s:'qaror_bor',w:decBor,
- q:"Tanlab olgunicha qancha ikkilanib yurgan eding — bir hafta, bir oy, bir yil?"},
-{id:'q21',s:'qaror_bor',w:decBor,
- q:"Boshqa variantlar ham bormidi? Nega ularni tanlamading?"},
-{id:'q22',s:'qaror_bor',w:decBor,t:'num',
- q:"Tanlagan yo'lingga hozir qanchalik ishonasan? 1 dan 10 gacha."},
+{id:'q5',s:'asos',c:1,t:'num',col:"◆ Og'riq (1-10)",
+ q:"Kelajaging noaniqligi seni qanchalik bezovta qiladi — 1 dan 10 gacha? Umuman bezovta qilmasa 1, juda ko'p o'ylantirsa 10.",
+ h:"1–3: «hali vaqt bor» · 4–6: «ba'zida o'ylayman» · 7–10: «har kuni o'ylayman», «do'stlarim biladi, men yo'q»"},
+{id:'q5b',s:'asos',col:"5b · Nega shu raqam",
+ q:"Nega aynan shu raqam? Qachon ko'proq o'ylaysan — kechqurunmi, imtihon oldidanmi, kimdir so'raganidami?"},
 
-/* ===== Blok 6 · Mustaqil o'rganish — hamma bola ===== */
-{id:'q23',s:'organish',w:isBola,c:1,
- q:"Maktabdan tashqari biror narsani o'zing o'rganmoqchi bo'lganing oxirgi marta qachon edi? Nimani o'rganmoqchi eding?"},
-{id:'q24',s:'organish',w:isBola,
- q:"O'sha narsani qayerdan o'rgana boshlagansan?",
- chips:["YouTube","Ilova","Kurs","Do'st","Ota-ona","Maktab"]},
-{id:'q25',s:'organish',w:isBola,t:'num',
- q:"O'sha o'rganishing necha kun davom etdi?"},
-{id:'q26',s:'organish',w:isBola,c:1,
- q:"O'rganishni to'xtatganingda nima bo'lgan edi — band bo'lib qoldingmi, zerikdingmi, tushunmadingmi?",
- chips:["Band bo'ldim","Zerikdim","Tushunmadim","Unutdim","Boshqa ish chiqdi"]},
-{id:'q27',s:'organish',w:isBola,c:1,t:'num',
- q:"Duolingo, SoloLearn yoki shunga o'xshash ilovada eng uzun ketma-ket necha kun shug'ullangansan? Ilovani ochib ko'rsat-chi.",
- h:"Suhbatdagi eng ishonchli raqam — ekranni ko'ring. To'rt bolada ham 7 kundan kam chiqsa, sof mustaqil ilova formati bu segmentda ishlamaydi."},
-{id:'q28',s:'organish',w:isBola,
- q:"Tashlab qo'yganingdan keyin qaytib boshlaganmisan? Nima sabab bo'ldi?"},
+{id:'q6',s:'asos',c:1,col:"6 · Noqulay voqea",
+ q:"Bilmasliging tufayli noqulay ahvolga tushgan payting bo'lganmi? Qanday holat edi?",
+ h:"Davom: o'shanda nima qilding? Kimdir yordam berdimi?",
+ chips:["Yo'q, bo'lmagan","Qarindoshlar so'raganda javob topolmadim","Maktabda yo'nalish tanlashda",
+        "Do'stlarim gapirganda jim turdim","Ota-onam bilan janjal","Kursga yozilishda qaysi birini bilmadim"]},
+{id:'m_voqea',s:'asos',c:1,m:1,col:"◆ Real voqea",
+ q:"Real voqea bormi?",
+ h:"«Yo'q» ham javob — demak og'riq yo'q, va bu normal.",
+ chips:["Ha","Yo'q"]},
 
-/* ===== Blok 7 · IT kursiga qatnaydigan bola ===== */
-{id:'q29',s:'it_off',w:p=>isBola(p)&&has(p,'it_off'),c:1,
- q:"Hozir borayotgan IT kursingni qayerdan topgan edingiz?",chips:KANAL},
-{id:'q30',s:'it_off',w:p=>isBola(p)&&has(p,'it_off'),c:1,
- q:"Bu kursga oyiga qancha to'lanadi, bilasanmi?"},
-{id:'q31',s:'it_off',w:p=>isBola(p)&&has(p,'it_off'),c:1,
- q:"Kursga borishni kim hal qildi — sen so'radingmi yoki ota-onang topib berdimi?",
- chips:["Men so'radim","Ota-onam","Birga hal qildik","Qarindosh maslahat berdi"]},
-{id:'q32',s:'it_off',w:p=>isBola(p)&&has(p,'it_off'),c:1,
- q:"Dasturlashni boshlaganingda birinchi qiyinchilik nima bo'lgan edi — kodning o'zimi yoki boshqa narsa?",
- h:"Javob kod emas, boshqa narsa (ingliz tili, fayllar, klaviatura) chiqsa — «avval raqamli savodxonlik» qarorimiz tasdiqlanadi.",
- chips:["Kod mantiqi","Ingliz tili","Fayl/papka","Terminal","Klaviatura","Xatoni o'qish"]},
-{id:'q33',s:'it_off',w:p=>isBola(p)&&has(p,'it_off'),c:1,
- q:"Hozir seni kursda nima ushlab turibdi — darsning o'zimi, ustozmi, guruhdagi bolalarmi, pul to'langanimi?",
- h:"«Ustoz» yoki «guruh» chiqsa — mustaqil ilova formati bu bola uchun ishlamasligi mumkin.",
- chips:["Ustoz","Guruh","Pul to'langan","O'z qiziqishim","Ota-onam"]},
-{id:'q34',s:'it_off',w:p=>isBola(p)&&has(p,'it_off'),
- q:"Bir kun darsni qoldirsang, keyingi kuni qaytish oson bo'ladimi? Oxirgi marta necha kun qoldirgan eding?"},
-{id:'q35',s:'it_off',w:p=>isBola(p)&&has(p,'it_off'),
- q:"Kursdan tashqari uyda o'zing ham mashq qilasanmi? Oxirgi marta qachon qilgan eding?"},
+{id:'q7',s:'asos',c:1,col:"7 · Kim hal qiladi",
+ q:"Kim bo'lishingni oxir-oqibat kim hal qiladi deb o'ylaysan — sen, ota-onang, yoki hayot?",
+ h:"Davom: ota-onang nima deydi? Kelishasizmi? Oxirgi marta qachon gaplashdingiz, nima bilan tugadi?",
+ chips:["Men o'zim","Ota-onam","Birga hal qilamiz","Hayot ko'rsatadi",
+        "Ota-onam «o'zing bil» deydi","Ular bir narsa deydi, men boshqa"]},
 
-/* ===== Blok 8 · IT'ni onlayn, o'zi o'rganadigan bola ===== */
-{id:'q36',s:'it_on',w:p=>isBola(p)&&has(p,'it_on'),c:1,
- q:"Qaysi ilova yoki saytda o'rganyapsan? Boshlaganingga qancha bo'ldi?"},
-{id:'q37',s:'it_on',w:p=>isBola(p)&&has(p,'it_on'),c:1,
- q:"Seni kim tekshirib turadi? Hech kim bo'lmasa — o'zingni qanday qilib majburlaysan?",
- h:"Mahsulotimiz aynan shu o'rinni egallashi kerak. «Hech kim» desa — keyin nima bo'lganini so'rang.",
- chips:["Hech kim","Ota-onam","Do'stim","Ilova eslatmasi","O'zim"]},
-{id:'q38',s:'it_on',w:p=>isBola(p)&&has(p,'it_on'),c:1,t:'num',
- q:"Oxirgi 7 kunda necha kun ochding?"},
-{id:'q39',s:'it_on',w:p=>isBola(p)&&has(p,'it_on'),c:1,
- q:"Eng uzun tanaffusing necha kun bo'lgan? Nima sabab bilan qaytding?"},
-{id:'q40',s:'it_on',w:p=>isBola(p)&&has(p,'it_on'),
- q:"Pullik versiyasini olganmisan? Olgan bo'lsang nega olding, olmagan bo'lsang nega olmading?",
- chips:["Oldim","Olmadim"]},
-{id:'q41',s:'it_on',w:p=>isBola(p)&&has(p,'it_on'),
- q:"Bir narsani tushunmay qolsang nima qilasan? Oxirgi marta shunday bo'lganda nima qilding?"},
+{id:'q8',s:'asos',c:1,col:"8 · Eng foydali suhbat",
+ q:"Kelajaging haqida gaplashganingda eng foydali bo'lgan suhbat qaysi edi? Kim bilan, nima dedi?",
+ h:"Yechimning shaklini ko'rsatadi: 10 boladan 7 tasi «odam» desa — diagnostika test emas, odam bo'lishi kerak. Davom: nimasi foydali bo'ldi? Shundan keyin biror narsa o'zgardimi?",
+ chips:["Bo'lmagan / eslolmayman","Akam / opam / amakim","O'qituvchi","Kursdagi ustoz",
+        "Do'stim","Blogger / video","Ota-onam"]},
 
-/* ===== Blok 9 · Til kursiga qatnaydigan bola ===== */
-{id:'q42',s:'til',w:p=>isBola(p)&&has(p,'til'),c:1,
- q:"Til kursiga borishni kim hal qilgan edi — o'zingmi yoki ota-onangmi?",
- chips:["Men so'radim","Ota-onam","Hamma boryapti","Maktab uchun kerak"]},
-{id:'q43',s:'til',w:p=>isBola(p)&&has(p,'til'),c:1,
- q:"Til kursi o'rniga dasturlash yoki IT kursini ham o'ylab ko'rganmidingiz? Nega bormadingiz?",
- h:"Butun to'plamdagi eng qimmatli savol. Bu oila ta'limga to'layapti — to'lash tayyorligi isbotlangan, lekin IT tanlanmagan. Sababini chuqur qazing.",
- chips:["Qiyin deb o'yladim","Qiziq emas","Bilmasdim","Matematika kerak deyishdi","Kompyuter yo'q"]},
-{id:'q44',s:'til',w:p=>isBola(p)&&has(p,'til'),c:1,
- q:"Til kursiga oyiga qancha to'lanadi, bilasanmi?"},
-{id:'q45',s:'til',w:p=>isBola(p)&&has(p,'til'),
- q:"Kursga qatnayotganingga qancha bo'ldi? Tashlab ketmoqchi bo'lgan payting bo'lganmi?"},
-{id:'q46',s:'til',w:p=>isBola(p)&&has(p,'til'),
- q:"Bu kursni qayerdan topgan edingiz?",chips:KANAL},
-{id:'q47',s:'til',w:p=>isBola(p)&&has(p,'til'),
- q:"Ingliz tili senga hozir qayerda kerak bo'lyapti? Oxirgi marta qachon ishlatgan eding?"},
+/* ===== Onlayn o'rganish ===== */
+{id:'q9',s:'onlayn',c:1,col:"9 · Onlayn urinish",
+ q:"Biror narsani telefondan yoki kompyuterdan o'zing o'rganishga urinib ko'rganmisan — YouTube, ilova, onlayn kurs?",
+ h:"Davom: nima edi? Necha kun davom etdi?",
+ chips:["YouTube'dan","Duolingo","SoloLearn / Mimo","Mohirdev / onlayn kurs",
+        "TikTok'dan ko'rib","Yo'q, urinmaganman"]},
+{id:'q9b',s:'onlayn',c:1,col:"9b · Nega to'xtagan",
+ q:"Qaysi kuni to'xtading — o'sha kuni nima bo'ldi?",
+ chips:["Zerikdim","Tushunmadim, so'raydigan odam yo'q edi","Unutdim / boshqa ish chiqdi",
+        "Telefon olib qo'yildi","Maktab boshlandi"]},
+{id:'q10',s:'onlayn',c:1,t:'num',col:"◆ Eng uzun seriya (kun)",
+ q:"Duolingo yoki shunga o'xshash ilovada eng uzun ketma-ket seriyang necha kun? Ochib ko'rsat-chi.",
+ h:"Ekranni ko'ring. 12 bolada ham 7 kundan kam chiqsa — o'qituvchisiz format ishlamaydi."},
+{id:'m_seriya',s:'onlayn',c:1,m:1,col:"◆ Seriya manbai",
+ q:"Bu raqam qayerdan?",
+ chips:["Ekrandan ko'rildi","Aytdi, ko'rsatmadi","Ilova yo'q"]},
 
-/* ===== Blok 10 · Fan / repetitorga qatnaydigan bola ===== */
-{id:'q48',s:'fan',w:p=>isBola(p)&&has(p,'fan'),c:1,
- q:"Bu fanni o'qishni kim tanlagan — o'zingmi, ota-onangmi, maktabmi?",
- chips:["Men","Ota-onam","Maktab","Repetitor tavsiya qildi"]},
-{id:'q49',s:'fan',w:p=>isBola(p)&&has(p,'fan'),c:1,
- q:"Qaysi yo'nalishga tayyorlanyapsan? Kim bo'lmoqchisan?"},
-{id:'q50',s:'fan',w:p=>isBola(p)&&has(p,'fan'),c:1,
- q:"Repetitor yoki kursga oyiga qancha ketadi, bilasanmi?"},
-{id:'q51',s:'fan',w:p=>isBola(p)&&has(p,'fan'),
- q:"Tanlagan yo'nalishing kompyuter yoki dasturlash bilan bog'liqmi deb o'ylaysanmi?",
- chips:["Ha","Yo'q","Bilmayman"]},
+/* ===== Yopilish ===== */
+{id:'q11',s:'yopilish',c:1,col:"11 · Sinfdosh",
+ q:"Sinfdoshlaringdan qanchasi hali kim bo'lishini bilmaydi? Ulardan 2 tasi bilan gaplashishimga yordam berasanmi?",
+ h:"Bu keyingi suhbatlarning yagona manbai.",
+ chips:["Ha, ism berdi","Ha, «so'rab ko'raman» dedi","Yo'q"]},
+{id:'q11b',s:'yopilish',col:"11b · Sinfdosh ismlari",
+ q:"Kimlar? Ismlarini yozing."},
+{id:'q12',s:'yopilish',c:1,col:"12 · Ota-ona raqami",
+ q:"Ota-onang bilan 20 daqiqa gaplashsam bo'ladimi? Raqamini berasanmi?",
+ h:"Raqam bermasa — «yo'q» deb yozing. Bu ota-ona suhbatlari uchun kirish.",
+ chips:["Raqam berdi","«So'rab ko'raman»","Yo'q"]},
 
-/* ===== Blok 11 · Hech qayerga bormaydigan bola ===== */
-{id:'q52',s:'yoq',w:p=>isBola(p)&&has(p,'yoq'),c:1,
- q:"Hozir hech qanday kursga bormaysan. Buning sababi nima?",
- chips:["Pul yo'q","Vaqt yo'q","Qiziq emas","Yaqinda kurs yo'q",
-        "Qaysi biriga borishni bilmayman","Ruxsat berishmaydi"]},
-{id:'q53',s:'yoq',w:p=>isBola(p)&&has(p,'yoq'),c:1,
- q:"Biror kursga borishni o'ylab ko'rgan payting bo'lganmi? Qachon va nega bormay qolgansan?",
- h:"«Yo'q, o'ylamaganman» chiqsa — bu bola hozircha mijozimiz emas. Shuni yozib qo'ying, bu ham natija.",
- chips:["Ha, o'ylaganman","Yo'q, o'ylamaganman"]},
-{id:'q54',s:'yoq',w:p=>isBola(p)&&has(p,'yoq'),c:1,
- q:"Kimdir senga kursga borishni taklif qilganmi? Kim edi, nima dedi, sen nima deding?"},
-{id:'q55',s:'yoq',w:p=>isBola(p)&&has(p,'yoq'),
- q:"Sinfdoshlaringdan kim biror kursga boradi? U bu haqda nima deydi?"},
-
-/* ===== Blok 12 · Yopilish — hamma bola ===== */
-{id:'q56',s:'yopilish',w:isBola,
- q:"Men senga bermagan, lekin berishim kerak bo'lgan savol bormi?"},
-{id:'q57',s:'yopilish',w:isBola,c:1,
- q:"Sinfdoshlaringdan qanchasi hali kim bo'lishini bilmaydi? Ulardan 2 tasi bilan gaplashishimga yordam bera olasanmi?",
- h:"Keyingi suhbatlarning yagona manbai. Ismini yozib oling.",
- chips:["Ha, ism berdi","Ha, lekin ismsiz","Yo'q"]},
-{id:'q58',s:'yopilish',w:isBola,c:1,
- q:"Ota-onang bilan ham 20 daqiqa gaplashsam bo'ladimi? Raqamini bera olasanmi?",
- chips:["Raqam berdi","«So'rayman» dedi","Yo'q"]},
-{id:'q59',s:'yopilish',w:isBola,c:1,
- q:"Keyingi hafta 15 daqiqalik yangi testni sinab ko'rib, menga fikringni yozib berasanmi?",
- h:"«Mayli, keyinroq» — bu «yo'q». Telegram va aniq kun aytilsa — «ha».",
- chips:["Telegram berdi","Kunini aytdi","«Keyinroq»","Yo'q"]},
-
-/* ===== Blok 13 · Ota-ona — bugungi holat ===== */
-{id:'q60',s:'p_holat',w:isOta,c:1,
- q:"Farzandingiz maktabdan keyin vaqtini asosan nimaga sarflayapti? Kecha nima qildi?"},
-{id:'q61',s:'p_holat',w:isOta,c:1,
- q:"Bu holat sizni tashvishga solyaptimi? Aynan nimasi tashvishga soladi?"},
-{id:'q62',s:'p_holat',w:isOta,c:1,
- q:"Farzandingizning shu holati sizga nimaga tushyapti — vaqtingizgami, pulingizgami, uydagi kelishmovchilikkami?",
- h:"«Hech narsa» javobi ham muhim — demak bu ular uchun hal qilinishi shart bo'lgan muammo emas.",
- chips:["Vaqt","Pul","Kelishmovchilik","Hech narsa"]},
-{id:'q63',s:'p_holat',w:isOta,
- q:"Uyingizda kompyuter yoki noutbuk bormi? Farzandingiz unga qachon o'tira oladi?",
- chips:["Bor, o'ziniki","Bor, umumiy","Yo'q","Faqat telefon"]},
-{id:'q64',s:'p_holat',w:isOta,
- q:"Farzandingiz kompyuterda nimalarni qila oladi deb o'ylaysiz?",
- h:"Bolaning 4-savoldagi javobi bilan solishtiring. Farq katta chiqsa — bu marketing uchun alohida ma'lumot.",
- chips:["Fayl/papka","Word hujjat","Prezentatsiya","Excel","Faqat brauzer","Deyarli hech narsa","Bilmayman"]},
-{id:'q65',s:'p_holat',w:p=>isOta(p)&&p.mood==='loqayd',
- q:"Farzandingizning o'qishi bilan uyda asosan kim shug'ullanadi?",
- chips:["Men","Turmush o'rtog'im","Katta farzand","Hech kim"]},
-
-/* ===== Blok 14 · Ota-ona — oxirgi bir yil, pul faktlari ===== */
-{id:'q66',s:'p_tarix',w:isOta,c:1,
- q:"Oxirgi bir yil ichida farzandingiz qanday kurs, repetitor yoki to'garakka qatnadi? Birma-bir sanab chiqaylik."},
-{id:'q67',s:'p_tarix',w:isOta,c:1,
- q:"Shu kurslarning har biriga oyiga qancha to'lagansiz va qancha vaqt davom etdi?",
- h:"Ota-ona suhbatidagi eng muhimi. Summani aniq aytolmasa — to'lash odati yo'qligining belgisi. NAVI narxi ham shu raqamlardan chiqadi."},
-{id:'q68',s:'p_tarix',w:isOta,c:1,
- q:"Har biri qanday tugadi — kursni oxirigacha o'qidimi yoki yarmida tashladimi? Nega?"},
-{id:'q69',s:'p_tarix',w:isOta,c:1,
- q:"Shu kurslarni qayerdan topgan edingiz? Aniq qayerdan?",
- chips:KANAL.concat(["Farzandim topdi"])},
-{id:'q70',s:'p_tarix',w:isOta,c:1,
- q:"Kursga yozdirish qarorini kim qabul qilgan edi?",
- chips:["Men","Farzandim so'radi","Birga hal qildik","Qarindosh maslahat berdi"]},
-{id:'q71',s:'p_tarix',w:p=>isOta(p)&&has(p,'yoq'),c:1,
- q:"Hozir farzandingiz hech qayerga qatnamayapti. Sababi nima?",
- chips:["Pul","Vaqt","Ishonch yo'q","Kerak emas deb o'ylayman","Qaysi biriga bilmayman"]},
-
-/* ===== Blok 15 · Ota-ona — kasb tanlash ===== */
-{id:'q72',s:'p_kasb',w:isOta,c:1,
- q:"Farzandingizning kelajakdagi kasbi haqida oxirgi marta qachon jiddiy gaplashgansiz? Nima sabab bo'lgan edi?"},
-{id:'q73',s:'p_kasb',w:isOta,c:1,
- q:"Farzandingiz biror qobiliyat yoki kasb tanlash testini topshirganmi? Natijasi chiqqandan keyin nima qildingiz?",
- chips:["Topshirgan","Topshirmagan"]},
-{id:'q74',s:'p_kasb',w:isOta,c:1,
- q:"Kasb tanlash mavzusida internetdan ma'lumot qidirganmisiz? Nima topdingiz, foydasi bo'ldimi?",
- h:"Umuman qidirmagan bo'lsa — bu odam bizning yechimimizni ham izlamaydi.",
- chips:["Qidirganman","Qidirmaganman"]},
-{id:'q75',s:'p_kasb',w:p=>isOta(p)&&has(p,'til'),c:1,
- q:"Siz til kursini tanlagansiz. IT yoki dasturlash kursini ham ko'rib chiqqanmidingiz? Nega yo'q?"},
-{id:'q76',s:'p_kasb',w:isOta,
- q:"Kasb haqidagi o'sha suhbatda u nima dedi, siz nima dedingiz? Bir fikrga keldingizmi?"},
-
-/* ===== Blok 16 · Ota-ona — byudjet va qaror ===== */
-{id:'q77',s:'p_pul',w:isOta,c:1,
- q:"Farzandingiz ta'limiga oyiga qancha pul ajratasiz? Bu summa qanday kelib chiqqan?"},
-{id:'q78',s:'p_pul',w:isOta,
- q:"Yangi kursga pul ajratish kerak bo'lsa, kim bilan maslahatlashasiz?"},
-{id:'q79',s:'p_pul',w:isOta,
- q:"Kursdan nimani kutasiz? Qanday natija bo'lsa «pulim bekorga ketmadi» deysiz?"},
-
-/* ===== Blok 17 · Ota-ona — yopilish ===== */
-{id:'q80',s:'p_yopilish',w:isOta,
- q:"Men sizdan so'ramagan, lekin so'rashim kerak bo'lgan savol bormi?"},
-{id:'q81',s:'p_yopilish',w:isOta,c:1,
- q:"Shu yoshda farzandi bor 2 ta tanishingizni menga tavsiya qila olasizmi?",
- chips:["Ha, kontakt berdi","«Aytaman» dedi","Yo'q"]},
-{id:'q82',s:'p_yopilish',w:isOta,c:1,
- q:"Keyingi hafta farzandingiz bilan 30 daqiqalik sinovga qatnasha olasizmi?",
- chips:["Ha, kun belgilandi","«Ko'ramiz» dedi","Yo'q"]},
-{id:'q83',s:'p_yopilish',w:isOta,c:1,
- q:"Pilot guruhga joy band qilish uchun 50 000 so'm bo'nak olamiz — keyin qaytariladi. Rozimisiz?",
- h:"Pul to'lashga tayyorligini tekshiradigan yagona haqiqiy savol. Qolgan hammasi — gap.",
- chips:["Ha, to'ladi","«O'ylab ko'ray»","Yo'q"]},
-
-/* ===== Blok 18 · Suhbatdan keyin — hamma suhbat uchun ===== */
-{id:'q84',s:'xulosa',c:1,
- q:"Bu suhbatda meni nima hayratlantirdi?",
- h:"Bo'sh qolsa — siz o'rganmadingiz, ko'proq o'zingiz gapirgansiz."},
-{id:'q85',s:'xulosa',c:1,
+/* ===== Suhbatdan keyin ===== */
+{id:'m_kvadrat',s:'xulosa',c:1,m:1,col:"◆ Kvadrat",
+ q:"Kvadrat — og'riq va harakat kesishmasi",
+ h:"① mijoz, yechim izlab yuribdi · ② to'siq bor, marketing muammosi · ③ mijoz ota-ona, bola foydalanuvchi · ④ bozor emas",
+ chips:["① Og'riq bor + harakat qilgan","② Og'riq bor + hech narsa qilmagan",
+        "③ Og'riq yo'q + harakat qilgan","④ Og'riq yo'q + hech narsa qilmagan"]},
+{id:'x_gap',s:'xulosa',c:1,col:"3 ta gap",
  q:"U aytgan 3 ta gapni shundayligicha yozing — o'z so'zingiz bilan emas.",
- h:"Misol: «Menga hech kim tushuntirmadi, shuning uchun tashlab yubordim». Sizning xulosangiz emas — uning o'z gapi."},
-{id:'q86',s:'xulosa',c:1,t:'num',
- q:"Muammo bu odam uchun qanchalik real? 1 dan 10 gacha."},
-{id:'q87',s:'xulosa',c:1,t:'num',
- q:"Bu oila ta'limga oyiga jami qancha to'layapti? (so'm)",
- h:"Narxni bozor aytadi. 10–12 suhbatdan keyin shu ustun NAVI narxini ko'rsatadi."},
-{id:'q88',s:'xulosa',c:1,
+ h:"Misol: «Menga hech kim tushuntirmadi, shuning uchun tashlab yubordim»."},
+{id:'x_hayrat',s:'xulosa',c:1,col:"Hayrat",
+ q:"Meni nima hayratlantirdi?",
+ h:"Bo'sh qolsa — siz o'rganmadingiz, ko'proq o'zingiz gapirgansiz. Ketma-ket 3 suhbatda bo'sh qolsa — to'xtang."},
+{id:'x_olindi',s:'xulosa',c:1,col:"Olindi",
  q:"Suhbatdan qo'lga nima tekkan?",
- chips:["Kontakt/tanishtiruv","Ota-ona raqami","Sinov uchun kelishuv","Pul/bo'nak","Hech narsa"]},
-{id:'q89',s:'xulosa',c:1,
- q:"Bu suhbat nimani ko'rsatdi?",
- h:"Faqat suhbatda aniq dalil chiqqanini belgilang. Taxminni belgilamang.",
- chips:["Muammo bor","Muammo yo'q","Pul to'laydi","Pul to'lamaydi","Oxirigacha boradi",
-        "Tashlab ketadi","Qarorni ota-ona qiladi","Qarorni bola qiladi","Kanal topildi",
-        "Savodxonlik kerak","Savodxonlik shart emas"]},
-{id:'q90',s:'xulosa',
+ chips:["Sinfdosh ismi","Ota-ona raqami","Hech narsa"]},
+{id:'x_keyingi',s:'xulosa',col:"Keyingi qadam",
  q:"Bu suhbatdan keyin men nima qilaman?"}
 ];
 
@@ -620,24 +426,23 @@ function render(){
 /* ---------- HOME ---------- */
 function vHome(app){
   const recs=lsGet(LS_REC,[]);
-  const nBola=recs.filter(r=>r.p&&r.p.who==='bola').length;
-  const nOta=recs.filter(r=>r.p&&r.p.who==='ota').length;
-  const nComm=recs.filter(r=>{const v=(r.a&&(r.a.q88||''))+'';return v&&!/Hech narsa/.test(v);}).length;
+  const nOgriq=recs.filter(r=>{const n=parseFloat(r.a&&r.a.q5);return !isNaN(n)&&n>=7;}).length;
+  const nMijoz=recs.filter(r=>/[①②]/.test(String((r.a&&r.a.m_kvadrat)||''))).length;
 
   const h=el('div','home-head');
-  h.innerHTML=`<span class="kicker">NAVI · CustDev</span>
-    <h1>Suhbat bloknoti</h1>
-    <p class="lede">Suhbatdoshni tanlang — savollar o'zi chiqadi. Javoblarni shu yerda to'ldiring, oxirida jadvalga chiqaring.</p>`;
+  h.innerHTML=`<span class="kicker">NAVI · CustDev #1</span>
+    <h1>Kasb tanlash og'riqlimi?</h1>
+    <p class="lede">14–16 yoshli bola bilan 25 daqiqalik suhbat. Bitta narsani aniqlaymiz: kelajakdagi kasb noaniqligi og'riqmi yoki yo'qmi.</p>`;
   app.appendChild(h);
 
   const st=el('div','stats');
-  st.innerHTML=`<div class="stat"><b>${recs.length}</b><span>Jami suhbat</span></div>
-    <div class="stat"><b>${nBola}/${nOta}</b><span>Bola / ota-ona</span></div>
-    <div class="stat"><b>${nComm}</b><span>Majburiyat</span></div>`;
+  st.innerHTML=`<div class="stat"><b>${recs.length}/12</b><span>Suhbat</span></div>
+    <div class="stat"><b>${nOgriq}</b><span>Og'riq ≥ 7</span></div>
+    <div class="stat"><b>${nMijoz}</b><span>① + ② mijoz</span></div>`;
   app.appendChild(st);
 
   const b1=el('button','btn','+  Yangi suhbat boshlash');
-  b1.onclick=()=>{state.view='setup';state.p={who:'bola',age:'14-16',learn:[],dec:'yoq',mood:'faol'};render();};
+  b1.onclick=()=>{state.view='setup';state.p={age:'14-16',learn:[],src:'tanish'};render();};
   app.appendChild(b1);
 
   const b2=el('button','btn ghost small',`Arxiv va jadvalga chiqarish (${recs.length})`);
@@ -650,15 +455,13 @@ function vHome(app){
   b3.onclick=()=>{state.view='cfg';render();};
   app.appendChild(b3);
 
-  app.appendChild(el('h2',null,"Kim bilan ko'proq gaplashish kerak"));
-  app.appendChild(el('p',null,`<span style="color:var(--muted)">Suhbatlarni shu tartibda taqsimlang — pastdagi ro'yxat foyda tartibida.</span>`));
+  app.appendChild(el('h2',null,"Kim bilan gaplashish kerak"));
+  app.appendChild(el('p',null,`<span style="color:var(--muted)">12 bola — kuniga 3–4 ta, 3–4 kun. Tarkib aralash bo'lsin.</span>`));
   const prio=el('div','prio');
   [
-   [1,"Hech qayerga bormaydigan + qarori yo'q bola","Sizning haqiqiy nishoningiz. Muammo bormi yoki yo'qmi — javob faqat shu yerdan chiqadi.","6 suhbat",'p1'],
-   [2,"Til kursiga boradigan bolaning ota-onasi","To'lashga tayyorligi ISBOTLANGAN, lekin IT ni tanlamagan. «Nega IT emas?» — eng qimmatli javob.","5 suhbat",'p2'],
-   [3,"IT ni onlayn, o'zi o'rganayotgan bola","H3 (mustaqil format ushlab turadimi) uchun yagona ishonchli manba.","3 suhbat",'p3'],
-   [4,"IT kursida o'qiyotgan bola","Oson topiladi, lekin eng kam yangi ma'lumot beradi. Qaror momenti uchun kerak.","3 suhbat",'p4'],
-   [5,"Loqayd ota-ona","Muhim, lekin ehtimol bozor emas. Tekshirish uchun ozgina.","2 suhbat",'p5']
+   [1,"Hech qayerga bormaydigan bola","Og'riq bormi yoki yo'qmi — javob eng toza shu yerdan chiqadi. Hech narsa xalaqit bermaydi.","4 suhbat",'p1'],
+   [2,"Til kursi yoki repetitorga boradigan bola","Oila ta'limga to'layapti — to'lash tayyorligi isbotlangan, lekin IT tanlanmagan.","4 suhbat",'p2'],
+   [3,"IT — kurs yoki onlayn o'rganadigan bola","Harakat qilgan bola qanday ko'rinishini ko'rsatadi. Taqqoslash uchun asos.","4 suhbat",'p3']
   ].forEach(([n,t,w,c,cl])=>{
     const d=el('div','prio-item '+cl);
     d.innerHTML=`<span class="prio-n">${n}</span><div><h3>${esc(t)}</h3><p class="prio-why">${esc(w)}</p><span class="prio-count">${esc(c)}</span></div>`;
@@ -666,14 +469,22 @@ function vHome(app){
   });
   app.appendChild(prio);
 
+  const kb=el('div','rulebox');
+  kb.style.borderLeftColor='var(--accent)';
+  kb.innerHTML=`<span class="rb-label" style="color:var(--accent)">Kimlar bilan</span><ul>
+    <li><strong>Yakka-yakka.</strong> Guruhda birinchi javob bergan bola qolganlarini belgilaydi.</li>
+    <li>Iloji bo'lsa <strong>sizning o'quvchingiz emas</strong> — ustozga bola «to'g'ri javob» izlaydi.</li>
+    <li>Tanish orqali tanishtirilgan notanish — eng yaxshi masofa.</li>
+    <li><strong>To'xtash qoidasi:</strong> ketma-ket 3 suhbatda «hayrat» bo'sh qolsa — yangi narsa eshitmayapsiz, to'xtang.</li>
+  </ul>`;
+  app.appendChild(kb);
+
   const rb=el('div','rulebox');
-  rb.innerHTML=`<span class="rb-label">Suhbat davomida</span><ul>
-    <li>Javobdan keyin <strong>3 soniya jim turing</strong> — eng qimmatli gap ikkinchi jumlada keladi.</li>
-    <li>Har umumiy javobga: <strong>«oxirgi marta qachon?»</strong></li>
-    <li>Iltifot eshitsangiz: «Rahmat, lekin men sen haqingda so'rayapman — o'shanda aniq nima qilgan eding?»</li>
-    <li>Siz gapirgan vaqt <strong>25% dan kam</strong> bo'lsin.</li>
-    <li><strong>Demo yo'q.</strong> NAVI, test, kurs — yopilish blokigacha og'zingizdan chiqmasin.</li>
-    <li><strong>Demo yo'q.</strong> NAVI, test, kurs — yopilishgacha og'zingizdan chiqmasin.</li>
+  rb.innerHTML=`<span class="rb-label">Suhbat davomida — 4 qoida</span><ul>
+    <li>Javobdan keyin <strong>3 soniya jim turing.</strong> Eng qimmatli gap ikkinchi jumlada keladi.</li>
+    <li>«Odatda», «doim», «hech qachon» eshitsangiz — <strong>«oxirgi marta qachon?»</strong></li>
+    <li>Bola javob topolmay qiynalsa — <strong>savolni o'zingiz to'ldirmang.</strong> «Masalan, dasturlash qiziq emasmi?» — bu javobni pichirlash. Jim turing.</li>
+    <li><strong>NAVI, test, kurs</strong> — hech qachon tilga olinmaydi. Hatto so'rasa ham: «keyin aytaman».</li>
   </ul>`;
   app.appendChild(rb);
 }
@@ -682,8 +493,8 @@ function vHome(app){
 function vSetup(app){
   const bar=el('div','bar');
   bar.innerHTML=`<button class="bar-back" id="bk">← Orqaga</button>
-    <div class="bar-mid"><span class="bar-title">Suhbatdosh haqida</span>
-    <span class="bar-sub">4 ta savol — keyin savollar chiqadi</span></div>`;
+    <div class="bar-mid"><span class="bar-title">Bola haqida</span>
+    <span class="bar-sub">3 ta belgi — keyin savollar chiqadi</span></div>`;
   app.appendChild(bar);
   $('#bk',bar).onclick=()=>{state.view='home';render();};
 
@@ -708,20 +519,15 @@ function vSetup(app){
 
   function draw(){
     wrap.innerHTML='';
-    wrap.appendChild(group("Kim bilan gaplashyapsiz?",null,P_WHO,p.who,k=>{p.who=k;}));
-    if(p.who==='bola') wrap.appendChild(group("Yoshi",null,P_AGE,p.age,k=>{p.age=k;}));
-    wrap.appendChild(group(
-      p.who==='bola'?"Hozir nima o'qiyapti?":"Farzandi hozir nima o'qiyapti?",
-      "Bir nechtasini tanlash mumkin",P_LEARN,p.learn,k=>{
+    wrap.appendChild(group("Yoshi","Nishon — 14–16",P_AGE,p.age,k=>{p.age=k;}));
+    wrap.appendChild(group("Hozir qayerda o'qiydi?","Bir nechtasini tanlash mumkin",
+      P_LEARN,p.learn,k=>{
         if(k==='yoq'){p.learn=p.learn.includes('yoq')?[]:['yoq'];}
         else{p.learn=p.learn.filter(x=>x!=='yoq');
           p.learn=p.learn.includes(k)?p.learn.filter(x=>x!==k):p.learn.concat(k);}
       },true));
-    if(p.who==='bola')
-      wrap.appendChild(group("Kelajakdagi kasbi haqida qarori bormi?",
-        "Suhbatning eng muhim yo'nalishi shunga bog'liq",P_DEC,p.dec,k=>{p.dec=k;}));
-    else
-      wrap.appendChild(group("Ota-ona qanday?","Farzandi ta'limiga munosabati",P_MOOD,p.mood,k=>{p.mood=k;}));
+    wrap.appendChild(group("Qayerdan topildi?","Ustoz-o'quvchi masofasi javobga ta'sir qiladi",
+      P_SRC,p.src,k=>{p.src=k;}));
 
     const nm=el('div','q-setup');
     nm.appendChild(el('label',null,"Ism yoki belgi<span class=\"sublab\">Faqat siz uchun — kimligini eslash uchun</span>"));
@@ -757,7 +563,7 @@ function vRun(app){
   const p=state.p;
   const bar=el('div','bar');
   bar.innerHTML=`<button class="bar-back" id="bk">←</button>
-    <div class="bar-mid"><span class="bar-title">${esc(p.name||(p.who==='bola'?"Bola":"Ota-ona"))}</span>
+    <div class="bar-mid"><span class="bar-title">${esc(p.name||'Bola')}</span>
     <span class="bar-sub" id="sub"></span></div><span class="bar-timer" id="tmr">00:00</span>`;
   app.appendChild(bar);
   $('#bk',bar).onclick=()=>{if(confirm("Suhbatdan chiqasizmi? Javoblar saqlanmaydi."))
@@ -773,6 +579,15 @@ function vRun(app){
     $('#m2',mb).setAttribute('aria-pressed',m==='all');drawList();};
   $('#m1',mb).onclick=()=>setMode('core');
   $('#m2',mb).onclick=()=>setMode('all');
+
+  const op=el('div','rulebox');
+  op.style.borderLeftColor='var(--accent)';
+  op.innerHTML=`<span class="rb-label" style="color:var(--accent)">Ochilish — so'zma-so'z ayting</span>
+    <p style="margin:0;font-size:15.5px;line-height:1.5">«Bugun ustoz sifatida emas. Men o'smirlar kelajagi haqida qanday
+    o'ylashini o'rganyapman — bu tadqiqot. Hech narsa sotmayman, taklif qilmayman, baholamayman.
+    To'g'ri yoki noto'g'ri javob yo'q. Menga aniq voqealar kerak — qachon, nima bo'ldi, nima qilding.
+    "Odatda" degan javoblar yordam bermaydi. 25 daqiqa. Yozib olsam bo'ladimi?»</p>`;
+  app.appendChild(op);
 
   const list=el('div');app.appendChild(list);
   app.appendChild(el('div','footpad'));
@@ -813,6 +628,8 @@ function vRun(app){
     const c=el('div','card');
     const val=state.a[q.id]||'';
     if(String(val).trim())c.classList.add('done');
+    if(q.m){c.classList.add('mark');
+      c.appendChild(el('span','mark-lab',"Siz belgilaysiz — so'ramang"));}
     c.appendChild(el('p','qtext',(q.c?'<span class="star">★</span>':'')+esc(q.q)));
     if(q.h)c.appendChild(el('p','hint',esc(q.h)));
 
@@ -889,13 +706,15 @@ function vArchive(app){
   const L={it_off:'IT kurs',it_on:'IT onlayn',til:'Til',fan:'Fan',yoq:'Kurs yo\'q'};
   recs.forEach(r=>{
     const d=new Date(r.at);
-    const who=r.p.who==='bola'?`Bola ${r.p.age}`:'Ota-ona';
+    const who=`Bola ${r.p.age||''}`.trim();
     const lr=(r.p.learn||[]).map(k=>L[k]||k).join(', ')||'—';
     const n=Object.values(r.a||{}).filter(v=>String(v).trim()).length;
     const row=el('div','rec');
     const mark=cfg().url?(r.synced?' · Sheets ✓':' · yuborilmagan'):'';
+    const meta=[r.p.name?who:'',lr,`${n} javob`,`${r.dur||0} daq`,
+      `${d.getDate()}.${d.getMonth()+1}.${d.getFullYear()}`].filter(Boolean).join(' · ');
     row.innerHTML=`<div><b>${esc(r.p.name||who)}</b>
-      <span>${who} · ${esc(lr)} · ${n} javob · ${r.dur||0} daq · ${d.getDate()}.${d.getMonth()+1}.${d.getFullYear()}${mark}</span></div>`;
+      <span>${esc(meta)}${mark}</span></div>`;
     const del=el('button','del',"O'chirish");
     del.onclick=async()=>{
       const c=cfg();
@@ -936,27 +755,26 @@ function vArchive(app){
 /* ---------- export ---------- */
 function columns(){
   const cols=[['__id','ID'],['sana','Sana'],['davom','Davomiyligi (daq)'],['ism','Ism/belgi'],
-    ['kim','Kim'],['yosh','Yosh'],['oqiydi',"Nima o'qiydi"],['qaror','Kasb qarori'],['ota_turi','Ota-ona turi']];
+    ['yosh','Yosh'],['oqiydi',"Qayerda o'qiydi"],['topildi','Qayerdan topildi']];
   const seen=new Set();
   SEC_ORDER.forEach(sec=>Q.filter(q=>q.s===sec).forEach(q=>{
     if(seen.has(q.id))return;seen.add(q.id);
-    cols.push([q.id,(SECS[q.s]?SECS[q.s][0]:'')+' — '+q.q]);
+    cols.push([q.id,q.col||((SECS[q.s]?SECS[q.s][0]:'')+' — '+q.q)]);
   }));
   return cols;
 }
 function rowFor(r,cols){
-  const L={it_off:'IT kurs (offline)',it_on:'IT onlayn (mustaqil)',til:'Til kursi',fan:'Fan/repetitor',yoq:"Kurs yo'q"};
-  const D={yoq:"Yo'q",taxmin:'Taxminan',ha:'Ha'};
+  const L={it_off:'IT kursi (offline)',it_on:'IT onlayn (mustaqil)',til:'Til kursi',
+           fan:'Fan/repetitor',yoq:"Hech qayerga bormaydi"};
+  const S={tanish:'Tanish orqali',oquvchi:"Mening o'quvchim",maktab:'Maktab orqali',boshqa:'Boshqa'};
   const d=new Date(r.at);
   const base={
     __id:r.id,
     sana:`${d.getDate()}.${d.getMonth()+1}.${d.getFullYear()}`,
     davom:r.dur||'',ism:r.p.name||'',
-    kim:r.p.who==='bola'?'Bola':'Ota-ona',
-    yosh:r.p.who==='bola'?r.p.age:'',
+    yosh:r.p.age||'',
     oqiydi:(r.p.learn||[]).map(k=>L[k]||k).join(', '),
-    qaror:r.p.who==='bola'?(D[r.p.dec]||''):'',
-    ota_turi:r.p.who==='ota'?(r.p.mood==='loqayd'?'Loqayd':'Faol'):''
+    topildi:S[r.p.src]||''
   };
   return cols.map(([k])=>String(base[k]!==undefined?base[k]:(r.a&&r.a[k]!==undefined?r.a[k]:'')));
 }
@@ -981,7 +799,7 @@ function unsynced(){return lsGet(LS_REC,[]).filter(r=>!r.synced);}
 function payload(rec){
   const cols=columns();
   const clean=v=>String(v==null?'':v).replace(/\r?\n/g,' · ');
-  return {id:rec.id,headers:cols.map(c=>c[1]),row:rowFor(rec,cols).map(clean)};
+  return {id:rec.id,sheet:SHEET_NAME,headers:cols.map(c=>c[1]),row:rowFor(rec,cols).map(clean)};
 }
 async function postTo(url,body){
   try{
